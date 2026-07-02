@@ -1,0 +1,25 @@
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Archivos de configuración del IDE
+.idea/
+
+# Variables de entorno / secretos (credenciales de PostgreSQL, API keys, etc.)
+.env
+
+# Cache y compilados de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Migraciones si usas algo tipo Alembic y no quieres subir el historial completo (opcional, normalmente SÍ se suben)
+# alembic/versions/*.pyc
