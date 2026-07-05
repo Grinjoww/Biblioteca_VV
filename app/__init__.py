@@ -17,6 +17,6 @@ def create_app():
     login_manager.init_app(app)
 
     with app.app_context():
-        from app import models
+        from app import models  # noqa: F401
 
     return app
