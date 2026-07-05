@@ -12,7 +12,7 @@ class RenovacionPrestamo(db.Model):
     fecha_limite_nueva = db.Column(db.Date, nullable=False)
     motivo = db.Column(db.Text, nullable=True)
 
-    prestamo = db.relationship('Prestamo', backref='renovaciones', lazy=True)
+    prestamo = db.relationship('Prestamo', backref='historial_renovaciones', lazy=True)
     bibliotecario = db.relationship('Usuario', backref='renovaciones_autorizadas', lazy=True)
 
     def __repr__(self):
