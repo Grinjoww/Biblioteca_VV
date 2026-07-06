@@ -1,0 +1,112 @@
+from datetime import datetime
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash
+
+from app.extensions import db
+from app.forms import LoginForm
+from app.models import Usuario, Sesion
+
+auth_bp = Blueprint('auth', __name__)
+
+MAX_INTENTOS_FALLIDOS = 5
+TIEMPO_BLOQUEO_MINUTOS = 5
+
+
+@auth_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for(_ruta_inicio_por_rol(current_user.rol)))
+
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        usuario = Usuario.query.filter_by(username=form.username.data).first()
+
+        if usuario is None:
+            flash('Usuario o contraseña incorrectos', 'danger')
+            return render_template('auth/login.html', form=form)
+
+        if usuario.bloqueado:
+            tiempo_transcurrido = datetime.utcnow() - usuario.fecha_bloqueo
+            if tiempo_transcurrido.total_seconds() < TIEMPO_BLOQUEO_MINUTOS * 60:
+                minutos_restantes = TIEMPO_BLOQUEO_MINUTOS - int(tiempo_transcurrido.total_seconds() / 60)
+                flash(f'Cuenta suspendida temporalmente. Intente de nuevo en {minutos_restantes} minutos.', 'danger')
+                return render_template('auth/login.html', form=form)
+            else:
+                usuario.bloqueado = False
+                usuario.intentos_fallidos = 0
+                usuario.fecha_bloqueo = None
+                db.session.commit()
+
+        if not usuario.activo:
+            flash('Esta cuenta está desactivada', 'danger')
+            return render_template('auth/login.html', form=form)
+
+        if not check_password_hash(usuario.password_hash, form.password.data):
+            usuario.intentos_fallidos = (usuario.intentos_fallidos or 0) + 1
+
+            if usuario.intentos_fallidos >= MAX_INTENTOS_FALLIDOS:
+                usuario.bloqueado = True
+                usuario.fecha_bloqueo = datetime.utcnow()
+                flash(f'Cuenta suspendida. Inténtalo nuevamente en {TIEMPO_BLOQUEO_MINUTOS} minutos.', 'warning')
+            else:
+                intentos_restantes = MAX_INTENTOS_FALLIDOS - usuario.intentos_fallidos
+                flash('Usuario o contraseña incorrectos', 'danger')
+
+            db.session.commit()
+            _registrar_sesion(usuario.id, resultado='fallido', motivo_cierre=None)
+            return render_template('auth/login.html', form=form)
+
+        # Login exitoso
+        usuario.intentos_fallidos = 0
+        usuario.ultimo_acceso = datetime.utcnow()
+        db.session.commit()
+
+        login_user(usuario)
+        _registrar_sesion(usuario.id, resultado='exitoso', motivo_cierre=None)
+
+        return redirect(url_for(_ruta_inicio_por_rol(usuario.rol)))
+
+    return render_template('auth/login.html', form=form)
+
+
+@auth_bp.route('/logout')
+@login_required
+def logout():
+    _cerrar_sesion_activa(current_user.id, motivo='logout')
+    logout_user()
+    flash('Sesión cerrada correctamente', 'info')
+    return redirect(url_for('auth.login'))
+
+
+def _ruta_inicio_por_rol(rol):
+    rutas = {
+        'bibliotecario': 'bibliotecario.inicio',
+        'estudiante': 'estudiante.catalogo',
+        'gerente': 'gerente.dashboard',
+    }
+    return rutas.get(rol, 'auth.login')
+
+
+def _registrar_sesion(usuario_id, resultado, motivo_cierre):
+    sesion = Sesion(
+        usuario_id=usuario_id,
+        ip_address=request.remote_addr,
+        dispositivo=request.user_agent.string,
+        resultado=resultado,
+        motivo_cierre=motivo_cierre
+    )
+    db.session.add(sesion)
+    db.session.commit()
+
+
+def _cerrar_sesion_activa(usuario_id, motivo):
+    sesion = Sesion.query.filter_by(
+        usuario_id=usuario_id, fecha_fin=None
+    ).order_by(Sesion.fecha_inicio.desc()).first()
+
+    if sesion:
+        sesion.fecha_fin = datetime.utcnow()
+        sesion.motivo_cierre = motivo
+        db.session.commit()

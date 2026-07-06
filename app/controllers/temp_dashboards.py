@@ -1,0 +1,28 @@
+from flask import Blueprint
+from flask_login import login_required, current_user
+from app.controllers.decoradores import requiere_rol
+
+bibliotecario_bp = Blueprint('bibliotecario', __name__, url_prefix='/bibliotecario')
+estudiante_bp = Blueprint('estudiante', __name__, url_prefix='/estudiante')
+gerente_bp = Blueprint('gerente', __name__, url_prefix='/gerente')
+
+
+@bibliotecario_bp.route('/inicio')
+@login_required
+@requiere_rol('bibliotecario')
+def inicio():
+    return f'Bienvenido bibliotecario: {current_user.username}'
+
+
+@estudiante_bp.route('/catalogo')
+@login_required
+@requiere_rol('estudiante')
+def catalogo():
+    return f'Bienvenido estudiante: {current_user.username}'
+
+
+@gerente_bp.route('/dashboard')
+@login_required
+@requiere_rol('gerente')
+def dashboard():
+    return f'Bienvenido gerente: {current_user.username}'

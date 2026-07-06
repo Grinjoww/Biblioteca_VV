@@ -76,8 +76,10 @@ def seed_categorias():
 
 def seed_usuarios():
     usuarios = [
-        ('gerente', 'Gerente1', 'gerente'),
-        ('bibliotecario', 'Biblio1', 'bibliotecario'),
+        ('gerente', 'Gerente', 'gerente'),
+        ('bibliotecario', 'Biblio', 'bibliotecario'),
+        ('estudiante', 'Estudiante', 'estudiante'),
+
     ]
     for username, password, rol in usuarios:
         if not Usuario.query.filter_by(username=username).first():
@@ -86,7 +88,7 @@ def seed_usuarios():
                 password_hash=generate_password_hash(password),
                 rol=rol
             ))
-    print("Usuarios iniciales (gerente y bibliotecario) cargados.")
+    print("Usuarios iniciales (gerente y bibliotecario y estudiante) cargados.")
 
 
 def run_seed():
