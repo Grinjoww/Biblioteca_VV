@@ -1,0 +1,50 @@
+{% extends 'gerente/_base.html' %}
+
+{% block title %}Dashboard - Gerente{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Panel del gerente</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-bg-primary shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title">Libros activos</h6>
+                <p class="display-6 mb-0">{{ indicadores.total_libros }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title">Préstamos activos</h6>
+                <p class="display-6 mb-0">{{ indicadores.prestamos_activos }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-warning shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title">Devoluciones con multa</h6>
+                <p class="display-6 mb-0">{{ indicadores.devoluciones_con_multa }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-danger shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title">Estudiantes con préstamos vencidos</h6>
+                <p class="display-6 mb-0">{{ indicadores.estudiantes_con_vencidos }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">Reportes disponibles</h5>
+        <p class="card-text text-muted">Consulta el detalle de préstamos, multas, inventario y más en la sección de reportes.</p>
+        <a href="{{ url_for('gerente.listado_reportes') }}" class="btn btn-primary">Ver reportes</a>
+    </div>
+</div>
+{% endblock %}
