@@ -2,7 +2,8 @@ from flask import Flask
 from app.extensions import db, migrate, login_manager, csrf
 from app.controllers.auth import auth_bp
 from app.controllers.bibliotecario import bibliotecario_bp
-from app.controllers.temp_dashboards import estudiante_bp, gerente_bp
+from app.controllers.estudiante import estudiante_bp
+from app.controllers.temp_dashboards import gerente_bp
 from dotenv import load_dotenv
 import os
 

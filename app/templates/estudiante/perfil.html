@@ -1,0 +1,30 @@
+{% extends 'estudiante/_base.html' %}
+
+{% block title %}Mi perfil - Estudiante{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Mi perfil</h2>
+
+{% if estudiante %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <p class="mb-1"><strong>Cédula:</strong> {{ estudiante.cedula }}</p>
+        <p class="mb-1"><strong>Nombre completo:</strong> {{ estudiante.nombres }} {{ estudiante.apellidos }}</p>
+        <p class="mb-1"><strong>Correo institucional:</strong> {{ estudiante.correo }}</p>
+        <p class="mb-1"><strong>Carrera:</strong> {{ estudiante.carrera.nombre if estudiante.carrera else '-' }}</p>
+        <p class="mb-1"><strong>Teléfono:</strong> {{ estudiante.telefono or '-' }}</p>
+        <p class="mb-1">
+            <strong>Estado de cuenta:</strong>
+            <span class="badge {% if estudiante.estado == 'activo' %}text-bg-success{% else %}text-bg-danger{% endif %}">
+                {{ estudiante.estado }}
+            </span>
+        </p>
+        <p class="mb-0"><strong>Préstamos activos:</strong> {{ prestamos_activos }}</p>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    Tu cuenta no tiene un perfil de estudiante vinculado. Contacta al bibliotecario para resolverlo.
+</div>
+{% endif %}
+{% endblock %}
