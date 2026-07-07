@@ -1,0 +1,46 @@
+{% extends 'bibliotecario/_base.html' %}
+
+{% block title %}Registrar préstamo - Bibliotecario{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Registrar nuevo préstamo</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    {{ form.cedula.label(class="form-label") }}
+                    {{ form.cedula(class="form-control", maxlength=10) }}
+                    {% for error in form.cedula.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    {{ form.isbn.label(class="form-label") }}
+                    {{ form.isbn(class="form-control", maxlength=13) }}
+                    {% for error in form.isbn.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+
+                <div class="col-12">
+                    <div id="validacion-prestamo" class="alert d-none" role="alert"></div>
+                </div>
+
+                <div class="col-12">
+                    {{ form.observaciones.label(class="form-label") }}
+                    {{ form.observaciones(class="form-control", rows=3) }}
+                </div>
+            </div>
+
+            <div class="mt-4">
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('bibliotecario.listado_prestamos') }}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/prestamos_nuevo.js') }}"></script>
+{% endblock %}

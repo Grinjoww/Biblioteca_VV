@@ -1,13 +1,17 @@
 from flask import Flask
-from app.extensions import db, migrate, login_manager
+from app.extensions import db, migrate, login_manager, csrf
 from app.controllers.auth import auth_bp
-from app.controllers.temp_dashboards import bibliotecario_bp, estudiante_bp, gerente_bp
-from config import config_por_nombre
+from app.controllers.bibliotecario import bibliotecario_bp
+from app.controllers.temp_dashboards import estudiante_bp, gerente_bp
 from dotenv import load_dotenv
 import os
 
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 load_dotenv(os.path.join(basedir, '.env'))
+
+# config.py lee SECRET_KEY/DATABASE_URL al importarse, por eso debe
+# importarse después de cargar el .env y no junto con los demás imports.
+from config import config_por_nombre  # noqa: E402
 
 
 def create_app(config_name=None):
@@ -22,6 +26,7 @@ def create_app(config_name=None):
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Debes iniciar sesión para acceder a esta página.'
     login_manager.login_message_category = 'warning'
+    csrf.init_app(app)
 
     with app.app_context():
         from app import models  # noqa: F401

@@ -1,0 +1,47 @@
+{% extends 'bibliotecario/_base.html' %}
+
+{% block title %}Libros - Bibliotecario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Catálogo de libros</h2>
+    <a href="{{ url_for('bibliotecario.nuevo_libro') }}" class="btn btn-primary">+ Registrar libro</a>
+</div>
+
+<div class="mb-3">
+    <input type="text" id="buscador-libros" class="form-control" placeholder="Buscar por título o ISBN...">
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>ISBN</th>
+                    <th>Editorial</th>
+                    <th>Categoría</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo-tabla-libros">
+                {% for libro in libros %}
+                <tr>
+                    <td>{{ libro.titulo }}</td>
+                    <td>{{ libro.isbn }}</td>
+                    <td>{{ libro.editorial.nombre if libro.editorial else '-' }}</td>
+                    <td>{{ libro.categoria.nombre if libro.categoria else '-' }}</td>
+                    <td>{{ libro.stock_disponible }} / {{ libro.stock_total }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-3">No hay libros registrados todavía.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/libros_lista.js') }}"></script>
+{% endblock %}

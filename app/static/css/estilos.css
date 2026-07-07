@@ -1,0 +1,33 @@
+body {
+    background-color: #f4f6f9;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+}
+
+.table thead {
+    background-color: #f1f3f5;
+}
+
+.table td,
+.table th {
+    vertical-align: middle;
+}
+
+#autores-seleccionados .badge {
+    font-size: 0.9rem;
+}
+
+.list-group-item-action {
+    user-select: none;
+}
+
+.display-6 {
+    font-weight: 600;
+}

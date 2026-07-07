@@ -1,0 +1,46 @@
+{% extends 'bibliotecario/_base.html' %}
+
+{% block title %}Devoluciones - Bibliotecario{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Préstamos activos — registrar devolución</h2>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Estudiante</th>
+                    <th>Libro</th>
+                    <th>Fecha límite</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prestamo in prestamos %}
+                <tr>
+                    <td>{{ prestamo.codigo_prestamo }}</td>
+                    <td>{{ prestamo.estudiante.nombres }} {{ prestamo.estudiante.apellidos }}</td>
+                    <td>{{ prestamo.ejemplar.libro.titulo }}</td>
+                    <td>{{ prestamo.fecha_limite.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if prestamo.fecha_limite < hoy %}
+                        <span class="badge text-bg-danger">Vencido</span>
+                        {% else %}
+                        <span class="badge text-bg-success">A tiempo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('bibliotecario.registrar_devolucion', prestamo_id=prestamo.id) }}" class="btn btn-sm btn-outline-primary">Registrar devolución</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-3">No hay préstamos activos.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -14,6 +14,7 @@ class Usuario(db.Model, UserMixin):
     intentos_fallidos = db.Column(db.Integer, nullable=False, server_default='0')
     bloqueado = db.Column(db.Boolean, nullable=False, server_default=db.false())
     fecha_bloqueo = db.Column(db.DateTime, nullable=True)
+    debe_cambiar_password = db.Column(db.Boolean, nullable=False, server_default=db.false())
     fecha_creacion = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
     ultimo_acceso = db.Column(db.DateTime, nullable=True)
 
