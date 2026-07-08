@@ -17,7 +17,10 @@ class TestingConfig(Config):
     TESTING = True
     DEBUG = True
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', Config.SQLALCHEMY_DATABASE_URI)
+    # Sin fallback a DATABASE_URL a proposito: si TEST_DATABASE_URL no esta
+    # configurada, preferimos que falle de forma explicita a que las pruebas
+    # (que hacen create_all/drop_all) corran contra la base de desarrollo.
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL')
 
 
 class ProductionConfig(Config):
