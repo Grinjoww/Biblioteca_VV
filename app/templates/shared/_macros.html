@@ -1,0 +1,26 @@
+{% macro tabla_dinamica(columnas, filas, mensaje_vacio='No hay datos para mostrar.') %}
+<div class="table-responsive">
+    <table class="table table-hover table-striped align-middle mb-0">
+        <thead>
+            <tr>
+                {% for columna in columnas %}
+                <th>{{ columna.replace('_', ' ') | title }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in filas %}
+            <tr>
+                {% for valor in fila %}
+                <td>{{ valor if valor is not none else '-' }}</td>
+                {% endfor %}
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ columnas | length }}" class="text-center text-muted py-3">{{ mensaje_vacio }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}

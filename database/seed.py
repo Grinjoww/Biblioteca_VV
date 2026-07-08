@@ -11,7 +11,7 @@ from app import create_app
 from app.extensions import db
 from app.models import (
     Pais, Facultad, Carrera, CategoriaLibro,
-    Usuario, ConfiguracionSistema
+    Usuario, Estudiante, ConfiguracionSistema
 )
 
 app = create_app()
@@ -78,8 +78,6 @@ def seed_usuarios():
     usuarios = [
         ('gerente', 'Gerente', 'gerente'),
         ('bibliotecario', 'Biblio', 'bibliotecario'),
-        ('estudiante', 'Estudiante', 'estudiante'),
-
     ]
     for username, password, rol in usuarios:
         if not Usuario.query.filter_by(username=username).first():
@@ -88,7 +86,42 @@ def seed_usuarios():
                 password_hash=generate_password_hash(password),
                 rol=rol
             ))
-    print("Usuarios iniciales (gerente y bibliotecario y estudiante) cargados.")
+
+    seed_estudiante_demo()
+    print("Usuarios iniciales (gerente, bibliotecario y estudiante) cargados.")
+
+
+def seed_estudiante_demo():
+    """Crea el usuario de demo 'estudiante' y su Estudiante vinculado.
+
+    Si el usuario ya existía de una siembra anterior sin Estudiante
+    vinculado (bug ya corregido), este paso lo repara al re-ejecutarse.
+    """
+    usuario = Usuario.query.filter_by(username='estudiante').first()
+    if usuario is None:
+        usuario = Usuario(
+            username='estudiante',
+            password_hash=generate_password_hash('Estudiante'),
+            rol='estudiante',
+        )
+        db.session.add(usuario)
+        db.session.flush()
+
+    if usuario.estudiante is None:
+        carrera = Carrera.query.order_by(Carrera.id).first()
+        if carrera is None:
+            print("No se pudo vincular el estudiante demo: no hay carreras cargadas todavía.")
+            return
+
+        db.session.add(Estudiante(
+            cedula='1234567890',
+            nombres='Estudiante',
+            apellidos='Demo',
+            correo='estudiante.demo@uteq.edu.ec',
+            carrera_id=carrera.id,
+            usuario_id=usuario.id,
+        ))
+        print("Estudiante demo vinculado al usuario 'estudiante'.")
 
 
 def run_seed():

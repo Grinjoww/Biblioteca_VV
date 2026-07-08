@@ -1,0 +1,43 @@
+{% extends 'bibliotecario/_base.html' %}
+
+{% block title %}Estudiantes - Bibliotecario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Estudiantes registrados</h2>
+    <a href="{{ url_for('bibliotecario.nuevo_estudiante') }}" class="btn btn-primary">+ Registrar estudiante</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Cédula</th>
+                    <th>Nombre completo</th>
+                    <th>Correo</th>
+                    <th>Carrera</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for estudiante in estudiantes %}
+                <tr>
+                    <td>{{ estudiante.cedula }}</td>
+                    <td>{{ estudiante.nombres }} {{ estudiante.apellidos }}</td>
+                    <td>{{ estudiante.correo }}</td>
+                    <td>{{ estudiante.carrera.nombre if estudiante.carrera else '-' }}</td>
+                    <td>
+                        <span class="badge {% if estudiante.estado == 'activo' %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+                            {{ estudiante.estado }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-3">No hay estudiantes registrados todavía.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

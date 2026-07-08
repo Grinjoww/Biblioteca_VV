@@ -17,7 +17,7 @@ def requiere_rol(*roles_permitidos):
 def _ruta_inicio_por_rol(rol):
     rutas = {
         'bibliotecario': 'bibliotecario.inicio',
-        'estudiante': 'estudiante.catalogo',
+        'estudiante': 'estudiante.listado_catalogo',
         'gerente': 'gerente.dashboard',
     }
     return rutas.get(rol, 'auth.login')

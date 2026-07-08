@@ -1,19 +1,25 @@
 from flask import Flask
-from app.extensions import db, migrate, login_manager
+from app.extensions import db, migrate, login_manager, csrf
 from app.controllers.auth import auth_bp
-from app.controllers.temp_dashboards import bibliotecario_bp, estudiante_bp, gerente_bp
+from app.controllers.bibliotecario import bibliotecario_bp
+from app.controllers.estudiante import estudiante_bp
+from app.controllers.gerente import gerente_bp
 from dotenv import load_dotenv
 import os
 
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 load_dotenv(os.path.join(basedir, '.env'))
 
+# config.py lee SECRET_KEY/DATABASE_URL al importarse, por eso debe
+# importarse después de cargar el .env y no junto con los demás imports.
+from config import config_por_nombre  # noqa: E402
 
-def create_app():
+
+def create_app(config_name=None):
+    config_name = config_name or os.environ.get('FLASK_ENV', 'development')
+
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave-temporal-desarrollo')
+    app.config.from_object(config_por_nombre[config_name])
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -21,6 +27,7 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Debes iniciar sesión para acceder a esta página.'
     login_manager.login_message_category = 'warning'
+    csrf.init_app(app)
 
     with app.app_context():
         from app import models  # noqa: F401

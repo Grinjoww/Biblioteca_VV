@@ -1,10 +1,10 @@
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db
-from app.forms import LoginForm
+from app.forms import LoginForm, CambiarPasswordForm
 from app.models import Usuario, Sesion
 
 auth_bp = Blueprint('auth', __name__)
@@ -80,10 +80,44 @@ def logout():
     return redirect(url_for('auth.login'))
 
 
+@auth_bp.route('/cambiar-password', methods=['GET', 'POST'])
+@login_required
+def cambiar_password():
+    form = CambiarPasswordForm()
+
+    if form.validate_on_submit():
+        if not check_password_hash(current_user.password_hash, form.password_actual.data):
+            flash('La contraseña actual no es correcta.', 'danger')
+            return render_template('auth/cambiar_password.html', form=form)
+
+        current_user.password_hash = generate_password_hash(form.password_nueva.data)
+        current_user.debe_cambiar_password = False
+        db.session.commit()
+
+        flash('Contraseña actualizada correctamente.', 'success')
+        return redirect(url_for(_ruta_inicio_por_rol(current_user.rol)))
+
+    return render_template('auth/cambiar_password.html', form=form)
+
+
+@auth_bp.before_app_request
+def _exigir_cambio_password():
+    if not current_user.is_authenticated:
+        return None
+    if not current_user.debe_cambiar_password:
+        return None
+
+    endpoints_permitidos = {'auth.cambiar_password', 'auth.logout', 'static'}
+    if request.endpoint in endpoints_permitidos:
+        return None
+
+    return redirect(url_for('auth.cambiar_password'))
+
+
 def _ruta_inicio_por_rol(rol):
     rutas = {
         'bibliotecario': 'bibliotecario.inicio',
-        'estudiante': 'estudiante.catalogo',
+        'estudiante': 'estudiante.listado_catalogo',
         'gerente': 'gerente.dashboard',
     }
     return rutas.get(rol, 'auth.login')

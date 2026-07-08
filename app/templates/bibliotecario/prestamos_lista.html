@@ -1,0 +1,49 @@
+{% extends 'bibliotecario/_base.html' %}
+
+{% block title %}Préstamos - Bibliotecario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Préstamos activos</h2>
+    <a href="{{ url_for('bibliotecario.nuevo_prestamo') }}" class="btn btn-primary">+ Registrar préstamo</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Estudiante</th>
+                    <th>Libro</th>
+                    <th>Ejemplar</th>
+                    <th>Fecha préstamo</th>
+                    <th>Fecha límite</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prestamo in prestamos %}
+                <tr>
+                    <td>{{ prestamo.codigo_prestamo }}</td>
+                    <td>{{ prestamo.estudiante.nombres }} {{ prestamo.estudiante.apellidos }}</td>
+                    <td>{{ prestamo.ejemplar.libro.titulo }}</td>
+                    <td>{{ prestamo.ejemplar.codigo_ejemplar }}</td>
+                    <td>{{ prestamo.fecha_prestamo.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ prestamo.fecha_limite.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if prestamo.fecha_limite < hoy %}
+                        <span class="badge text-bg-danger">Vencido</span>
+                        {% else %}
+                        <span class="badge text-bg-success">A tiempo</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-3">No hay préstamos activos.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
