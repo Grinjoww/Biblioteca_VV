@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 from app.extensions import db, migrate, login_manager, csrf
 from app.controllers.auth import auth_bp
 from app.controllers.bibliotecario import bibliotecario_bp
@@ -36,5 +36,9 @@ def create_app(config_name=None):
     app.register_blueprint(bibliotecario_bp)
     app.register_blueprint(estudiante_bp)
     app.register_blueprint(gerente_bp)
+
+    @app.route('/')
+    def index():
+        return redirect(url_for('auth.login'))
 
     return app
