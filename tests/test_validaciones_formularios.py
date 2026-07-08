@@ -151,11 +151,45 @@ def test_registrar_estudiante_telefono_con_letras(client, login, usuario_bibliot
     login('test_bibliotecario', 'ClaveSegura123')
 
     respuesta = client.post('/bibliotecario/estudiantes/nuevo', data=_datos_estudiante_validos(
-        telefono='09ABCD123',
+        telefono='09ABCD1234',  # 10 caracteres, pero con letras
     ))
 
     assert respuesta.status_code == 200
-    assert 'El teléfono solo puede contener números.' in respuesta.get_data(as_text=True)
+    assert 'El teléfono debe contener exactamente 10 dígitos.' in respuesta.get_data(as_text=True)
+
+
+def test_registrar_estudiante_telefono_9_digitos(client, login, usuario_bibliotecario):
+    login('test_bibliotecario', 'ClaveSegura123')
+
+    respuesta = client.post('/bibliotecario/estudiantes/nuevo', data=_datos_estudiante_validos(
+        telefono='099123456',  # 9 digitos: menos de 10
+    ))
+
+    assert respuesta.status_code == 200
+    assert 'El teléfono debe contener exactamente 10 dígitos.' in respuesta.get_data(as_text=True)
+
+
+def test_registrar_estudiante_telefono_11_digitos(client, login, usuario_bibliotecario):
+    login('test_bibliotecario', 'ClaveSegura123')
+
+    respuesta = client.post('/bibliotecario/estudiantes/nuevo', data=_datos_estudiante_validos(
+        telefono='09912345678',  # 11 digitos: mas de 10
+    ))
+
+    assert respuesta.status_code == 200
+    assert 'El teléfono debe contener exactamente 10 dígitos.' in respuesta.get_data(as_text=True)
+
+
+def test_registrar_estudiante_telefono_10_digitos_valido(client, login, usuario_bibliotecario, carrera_prueba):
+    login('test_bibliotecario', 'ClaveSegura123')
+
+    respuesta = client.post('/bibliotecario/estudiantes/nuevo', data=_datos_estudiante_validos(
+        telefono='0991234567',  # exactamente 10 digitos
+        carrera_id=str(carrera_prueba.id),
+    ))
+
+    assert respuesta.status_code == 302
+    assert respuesta.headers['Location'] == '/bibliotecario/estudiantes'
 
 
 def test_registrar_estudiante_fecha_nacimiento_futura(client, login, usuario_bibliotecario):

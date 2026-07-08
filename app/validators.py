@@ -46,8 +46,9 @@ def es_correo_valido(correo):
     return bool(correo) and bool(_PATRON_CORREO.match(correo.strip()))
 
 
-def es_telefono_valido(telefono, longitud_min=7, longitud_max=15):
-    return bool(telefono) and telefono.isdigit() and longitud_min <= len(telefono) <= longitud_max
+def es_telefono_valido(telefono, longitud=10):
+    """Telefono de este sistema: solo digitos, exactamente `longitud` (10 por defecto)."""
+    return bool(telefono) and telefono.isdigit() and len(telefono) == longitud
 
 
 def es_cedula_ecuatoriana_valida(cedula):
@@ -130,21 +131,22 @@ class CorreoValido:
 
 
 class TelefonoValido:
-    def __init__(self, longitud_min=7, longitud_max=15, message=None):
-        self.longitud_min = longitud_min
-        self.longitud_max = longitud_max
-        self.message = message
+    """Telefono de este sistema: solo digitos, exactamente `longitud` (10 por defecto).
+
+    Se rechaza tanto si contiene letras/simbolos como si tiene menos o mas
+    digitos de los exigidos; en ambos casos se usa el mismo mensaje, ya que
+    para el usuario el resultado es el mismo: el telefono no es valido.
+    """
+
+    def __init__(self, longitud=10, message=None):
+        self.longitud = longitud
+        self.message = message or f'El teléfono debe contener exactamente {self.longitud} dígitos.'
 
     def __call__(self, form, field):
         if not field.data:
             return
-        if not field.data.isdigit():
-            raise ValidationError(self.message or 'El teléfono solo puede contener números.')
-        if not (self.longitud_min <= len(field.data) <= self.longitud_max):
-            raise ValidationError(
-                self.message
-                or f'El teléfono debe tener entre {self.longitud_min} y {self.longitud_max} dígitos.'
-            )
+        if not field.data.isdigit() or len(field.data) != self.longitud:
+            raise ValidationError(self.message)
 
 
 class CedulaEcuatorianaValida:
