@@ -8,6 +8,7 @@ from app.controllers.decoradores import requiere_rol
 from app.extensions import db
 from app.forms import LibroForm
 from app.models import Autor, CategoriaLibro, Editorial, Ejemplar, Libro, LibroAutor
+from app.validators import es_solo_letras
 
 
 def _siguiente_numero_ejemplar():
@@ -177,6 +178,12 @@ def api_crear_autor():
 
     if not nombres or not apellidos:
         return jsonify({'error': 'Nombres y apellidos son obligatorios.'}), 400
+
+    if len(nombres) < 2 or len(apellidos) < 2:
+        return jsonify({'error': 'Nombres y apellidos deben tener al menos 2 caracteres.'}), 400
+
+    if not es_solo_letras(nombres) or not es_solo_letras(apellidos):
+        return jsonify({'error': 'Nombres y apellidos solo pueden contener letras y espacios.'}), 400
 
     autor_existente = Autor.query.filter(
         db.func.lower(Autor.nombres) == nombres.lower(),

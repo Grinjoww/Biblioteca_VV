@@ -9,6 +9,7 @@ from app.controllers.decoradores import requiere_rol
 from app.extensions import db
 from app.forms import EstudianteForm
 from app.models import Carrera, Estudiante, Usuario
+from app.validators import es_cedula_ecuatoriana_valida
 
 
 def _generar_password_temporal():
@@ -92,8 +93,8 @@ def nuevo_estudiante():
 @requiere_rol('bibliotecario')
 def api_verificar_cedula():
     cedula = (request.args.get('cedula') or '').strip()
-    if len(cedula) != 10 or not cedula.isdigit():
-        return jsonify({'valida': False, 'existe': False, 'mensaje': 'La cédula debe tener 10 dígitos.'})
+    if not es_cedula_ecuatoriana_valida(cedula):
+        return jsonify({'valida': False, 'existe': False, 'mensaje': 'La cédula ingresada no es válida.'})
 
     estudiante = Estudiante.query.filter_by(cedula=cedula).first()
     if estudiante:

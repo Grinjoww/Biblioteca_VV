@@ -36,6 +36,7 @@
                 <div class="col-md-6">
                     {{ form.telefono.label(class="form-label") }}
                     {{ form.telefono(class="form-control") }}
+                    {% for error in form.telefono.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
 
                 <div class="col-md-6">
@@ -45,11 +46,13 @@
                 </div>
                 <div class="col-md-3">
                     {{ form.fecha_nacimiento.label(class="form-label") }}
-                    {{ form.fecha_nacimiento(class="form-control") }}
+                    {{ form.fecha_nacimiento(class="form-control", required=true) }}
+                    {% for error in form.fecha_nacimiento.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="col-md-3">
                     {{ form.genero.label(class="form-label") }}
                     {{ form.genero(class="form-select") }}
+                    {% for error in form.genero.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
             </div>
 

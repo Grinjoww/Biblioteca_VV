@@ -8,7 +8,7 @@ from app.controllers.bibliotecario import bibliotecario_bp
 from app.controllers.decoradores import requiere_rol
 from app.extensions import db
 from app.forms import PrestamoForm
-from app.models import Ejemplar, Estudiante, Libro, Prestamo
+from app.models import ConfiguracionSistema, Ejemplar, Estudiante, Libro, Prestamo
 
 
 def _validar_prestamo_bd(cedula, isbn):
@@ -16,6 +16,17 @@ def _validar_prestamo_bd(cedula, isbn):
         text('SELECT codigo_resultado, mensaje FROM validar_prestamo(:cedula, :isbn)'),
         {'cedula': cedula, 'isbn': isbn},
     ).fetchone()
+
+
+def _max_prestamos_activos():
+    """Lee el limite configurable; si no existe o es invalido, no limita."""
+    config = ConfiguracionSistema.query.filter_by(clave='max_prestamos_activos').first()
+    if config is None:
+        return None
+    try:
+        return int(config.valor)
+    except (TypeError, ValueError):
+        return None
 
 
 @bibliotecario_bp.route('/prestamos')
@@ -49,6 +60,19 @@ def nuevo_prestamo():
 
         estudiante = Estudiante.query.filter_by(cedula=cedula).first()
         libro = Libro.query.filter_by(isbn=isbn).first()
+
+        limite = _max_prestamos_activos()
+        if limite is not None:
+            prestamos_activos = Prestamo.query.filter_by(
+                estudiante_id=estudiante.id, estado='activo'
+            ).count()
+            if prestamos_activos >= limite:
+                flash(
+                    f'El estudiante ya alcanzó el máximo de {limite} préstamos activos permitidos.',
+                    'danger'
+                )
+                return render_template('bibliotecario/prestamos_nuevo.html', form=form)
+
         ejemplar = Ejemplar.query.filter_by(libro_id=libro.id, estado='disponible').first()
 
         if ejemplar is None:

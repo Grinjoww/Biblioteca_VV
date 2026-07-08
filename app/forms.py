@@ -5,6 +5,11 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, Regexp, EqualTo
 
+from app.validators import (
+    AnioValido, CedulaEcuatorianaValida, ContieneLetra, CorreoValido,
+    EdadEntre, FechaNoFutura, Isbn13Valido, SoloLetras, TelefonoValido,
+)
+
 
 class LoginForm(FlaskForm):
     username = StringField('Usuario', validators=[DataRequired(message='El usuario es obligatorio')])
@@ -26,47 +31,87 @@ class CambiarPasswordForm(FlaskForm):
 
 
 class LibroForm(FlaskForm):
+    # ISBN: campo de CREACION de un libro nuevo -> validacion completa
+    # (formato + digito verificador real de ISBN-13).
     isbn = StringField('ISBN', validators=[
-        DataRequired(),
-        Regexp(r'^[0-9]{13}$', message='El ISBN debe tener 13 dígitos numéricos')
+        DataRequired(message='El ISBN es obligatorio.'),
+        Isbn13Valido(),
     ])
-    titulo = StringField('Título', validators=[DataRequired(), Length(max=255)])
+    titulo = StringField('Título', validators=[
+        DataRequired(message='El título es obligatorio.'),
+        Length(min=2, max=255, message='El título debe tener entre 2 y 255 caracteres.'),
+        ContieneLetra(message='El título no puede contener solo números o símbolos.'),
+    ])
     subtitulo = StringField('Subtítulo', validators=[Optional(), Length(max=255)])
-    editorial_nombre = StringField('Editorial', validators=[DataRequired(), Length(max=150)])
+    editorial_nombre = StringField('Editorial', validators=[
+        DataRequired(message='La editorial es obligatoria.'),
+        Length(min=2, max=150, message='La editorial debe tener entre 2 y 150 caracteres.'),
+        ContieneLetra(message='La editorial no puede contener solo números o símbolos.'),
+    ])
     categoria_id = SelectField(
         'Categoría', coerce=int,
-        validators=[NumberRange(min=1, message='Selecciona una categoría')]
+        validators=[NumberRange(min=1, message='Selecciona una categoría.')]
     )
-    anio_publicacion = IntegerField('Año de publicación', validators=[Optional(), NumberRange(min=1800)])
+    anio_publicacion = IntegerField('Año de publicación', validators=[
+        Optional(),
+        AnioValido(minimo=1000, message='Ingresa un año de publicación válido (entre 1000 y el año actual).'),
+    ])
     edicion = StringField('Edición', validators=[Optional(), Length(max=20)])
-    num_paginas = IntegerField('Número de páginas', validators=[Optional(), NumberRange(min=1)])
-    idioma = StringField('Idioma', default='Español', validators=[DataRequired(), Length(max=30)])
+    num_paginas = IntegerField('Número de páginas', validators=[
+        Optional(),
+        NumberRange(min=1, message='El número de páginas debe ser mayor a 0.'),
+    ])
+    idioma = StringField('Idioma', default='Español', validators=[
+        DataRequired(message='El idioma es obligatorio.'),
+        Length(max=30),
+        SoloLetras(message='El idioma solo puede contener letras y espacios.'),
+    ])
     stock_inicial = IntegerField(
         'Stock inicial (ejemplares)',
-        validators=[DataRequired(), NumberRange(min=1, max=200, message='Ingresa una cantidad entre 1 y 200')]
+        validators=[
+            DataRequired(message='El stock inicial es obligatorio.'),
+            NumberRange(min=1, max=200, message='Ingresa una cantidad entre 1 y 200.'),
+        ]
     )
     autores_ids = HiddenField('Autores')
     submit = SubmitField('Registrar libro')
 
 
 class EstudianteForm(FlaskForm):
+    # Cedula: campo de CREACION de un estudiante nuevo -> validacion
+    # completa (formato + digito verificador real).
     cedula = StringField('Cédula', validators=[
-        DataRequired(),
-        Regexp(r'^[0-9]{10}$', message='La cédula debe tener 10 dígitos')
+        DataRequired(message='La cédula es obligatoria.'),
+        CedulaEcuatorianaValida(),
     ])
-    nombres = StringField('Nombres', validators=[DataRequired(), Length(max=100)])
-    apellidos = StringField('Apellidos', validators=[DataRequired(), Length(max=100)])
+    nombres = StringField('Nombres', validators=[
+        DataRequired(message='Los nombres son obligatorios.'),
+        Length(min=2, max=100, message='Los nombres deben tener entre 2 y 100 caracteres.'),
+        SoloLetras(message='Los nombres solo pueden contener letras y espacios.'),
+    ])
+    apellidos = StringField('Apellidos', validators=[
+        DataRequired(message='Los apellidos son obligatorios.'),
+        Length(min=2, max=100, message='Los apellidos deben tener entre 2 y 100 caracteres.'),
+        SoloLetras(message='Los apellidos solo pueden contener letras y espacios.'),
+    ])
     correo = StringField('Correo electrónico', validators=[
-        DataRequired(),
-        Regexp(r'^[^@]+@[^@]+\.[^@]+$', message='Ingresa un correo válido'),
+        DataRequired(message='El correo es obligatorio.'),
+        CorreoValido(),
         Length(max=150),
     ])
-    telefono = StringField('Teléfono', validators=[Optional(), Length(max=15)])
+    telefono = StringField('Teléfono', validators=[
+        Optional(),
+        TelefonoValido(),
+    ])
     carrera_id = SelectField(
         'Carrera', coerce=int,
-        validators=[NumberRange(min=1, message='Selecciona una carrera')]
+        validators=[NumberRange(min=1, message='Selecciona una carrera.')]
     )
-    fecha_nacimiento = DateField('Fecha de nacimiento', validators=[Optional()])
+    fecha_nacimiento = DateField('Fecha de nacimiento', validators=[
+        DataRequired(message='La fecha de nacimiento es obligatoria.'),
+        FechaNoFutura(message='La fecha de nacimiento no puede ser futura.'),
+        EdadEntre(15, 100, message='El estudiante debe tener entre 15 y 100 años.'),
+    ])
     genero = SelectField(
         'Género',
         choices=[('', 'Prefiero no decir'), ('M', 'Masculino'), ('F', 'Femenino'), ('O', 'Otro')],
@@ -76,13 +121,17 @@ class EstudianteForm(FlaskForm):
 
 
 class PrestamoForm(FlaskForm):
+    # Cedula/ISBN aqui son campos de BUSQUEDA de un estudiante/libro que ya
+    # deben existir (no se crean aqui), por eso se valida solo el formato
+    # y no el digito verificador: exigirlo bloquearia prestamos para
+    # estudiantes o libros de prueba/demo registrados antes de esta regla.
     cedula = StringField('Cédula del estudiante', validators=[
-        DataRequired(),
-        Regexp(r'^[0-9]{10}$', message='La cédula debe tener 10 dígitos')
+        DataRequired(message='La cédula es obligatoria.'),
+        Regexp(r'^[0-9]{10}$', message='La cédula debe contener exactamente 10 dígitos.')
     ])
     isbn = StringField('ISBN del libro', validators=[
-        DataRequired(),
-        Regexp(r'^[0-9]{13}$', message='El ISBN debe tener 13 dígitos numéricos')
+        DataRequired(message='El ISBN es obligatorio.'),
+        Regexp(r'^[0-9]{13}$', message='El ISBN debe contener exactamente 13 dígitos numéricos.')
     ])
     observaciones = TextAreaField('Observaciones', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Registrar préstamo')
@@ -92,7 +141,7 @@ class DevolucionForm(FlaskForm):
     estado_ejemplar = SelectField(
         'Estado del ejemplar',
         choices=[('bueno', 'Bueno'), ('dañado', 'Dañado'), ('perdido', 'Perdido')],
-        validators=[DataRequired()],
+        validators=[DataRequired(message='Selecciona el estado del ejemplar.')],
     )
     observaciones = TextAreaField('Observaciones', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Registrar devolución')
