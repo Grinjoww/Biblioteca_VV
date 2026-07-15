@@ -1,4 +1,5 @@
 {% extends 'estudiante/_base.html' %}
+{% from 'shared/_macros.html' import portada_libro %}
 
 {% block title %}Catálogo - Estudiante{% endblock %}
 
@@ -23,6 +24,7 @@
     {% for libro in libros %}
     <div class="col-md-4">
         <div class="card h-100 shadow-sm">
+            {{ portada_libro(libro, css_class='portada-catalogo') }}
             <div class="card-body">
                 <h5 class="card-title">{{ libro.titulo }}</h5>
                 <h6 class="card-subtitle mb-2 text-muted">{{ libro.categoria.nombre if libro.categoria else '-' }}</h6>

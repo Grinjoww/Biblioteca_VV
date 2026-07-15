@@ -307,4 +307,70 @@ az postgres flexible-server stop --resource-group rg-biblioteca-vv --name biblio
 - La base de datos quedó alojada en Azure Database for PostgreSQL Flexible Server, un servicio administrado y separado del entorno de desarrollo local.
 - El despliegue quedó automatizado con GitHub Actions: cada `push` a la rama `feature/deploy-azure` dispara un build e implementación automáticos hacia el App Service.
 - Se mejoró la calidad y seguridad de los datos del sistema agregando validaciones robustas del lado del servidor (cédula ecuatoriana con dígito verificador, ISBN-13 con dígito verificador, formatos de nombre/correo/teléfono, rangos de fecha y edad), que rechazan datos inválidos sin depender de que el navegador los filtre primero.
-- Las 33 pruebas automáticas (20 originales más 13 nuevas) confirman que estas mejoras no rompieron ninguna funcionalidad existente del sistema.
+- Se agregó soporte para portadas de libros (ver sección 16), mejorando la presentación del catálogo sin afectar el resto del sistema.
+- Las pruebas automáticas confirman que estas mejoras no rompieron ninguna funcionalidad existente del sistema (ver el resultado exacto en la sección 16 para la corrida más reciente, que incluye las pruebas de portadas).
+
+---
+
+## 16. Portadas de libros (subida de imágenes)
+
+Agregado después de la primera versión de esta documentación: ahora el bibliotecario puede subir una imagen de portada al registrar un libro, y esa portada se muestra en los catálogos y el detalle del libro.
+
+**Campo nuevo en el modelo:** `Libro.portada_archivo` (`app/models/libros.py`) — cadena de texto opcional (`nullable=True`), guarda la ruta relativa a `app/static/` del archivo (por ejemplo `uploads/portadas/3f9a...c2.png`). Al ser opcional, los libros ya existentes (incluidos los que no tienen portada) siguen funcionando sin ningún cambio.
+
+**Migración:** `migrations/versions/b4f2a1c9e3d7_portada_libro.py` (`flask db upgrade` la aplica junto con las demás).
+
+**Dónde se guardan las imágenes:** localmente, en `app/static/uploads/portadas/`, con un nombre de archivo generado con UUID (no se usa el nombre original que sube el usuario, evitando colisiones y problemas de seguridad con nombres de archivo). Esta carpeta está en `.gitignore` (excepto un `.gitkeep` para que exista en el repositorio); las imágenes reales que suban los usuarios nunca se suben al repositorio.
+
+> **Limitación conocida para producción:** en Azure App Service, el disco donde vive el código de la app puede no persistir de forma confiable entre despliegues (sobre todo si Azure usa "Run From Package"/zip deploy, que puede dejar esa carpeta de solo lectura). Para esta entrega universitaria, el almacenamiento local alcanza para la demo. Para un entorno de producción real, lo recomendado es Azure Blob Storage (subir el archivo ahí y guardar en `portada_archivo` la URL o el nombre del blob en vez de una ruta local). No se implementó Blob Storage en esta entrega porque el proyecto no tenía esa configuración todavía.
+
+**Formatos aceptados:** JPG, JPEG, PNG y WEBP, máximo 2 MB. Se valida en el servidor (no solo en el `accept` del HTML) de dos formas:
+1. Extensión del archivo, con `flask_wtf.file.FileAllowed`.
+2. Contenido real del archivo: se leen los primeros bytes ("magic numbers") y se comparan con las firmas conocidas de JPEG/PNG/WEBP (`app/portadas.py`), para no confiar solo en la extensión o en el `Content-Type` que manda el navegador, que se pueden falsificar.
+
+Si el archivo no es válido, se muestra el mensaje "La portada debe ser una imagen JPG, PNG o WEBP." Si supera el tamaño máximo, "La imagen no debe superar los 2 MB."
+
+**Vistas donde ahora aparece la portada:**
+- Catálogo de libros del estudiante (`estudiante/catalogo.html`): cada libro se muestra como tarjeta con la portada arriba, manteniendo título, categoría, editorial y disponibilidad.
+- Detalle de libro del estudiante (`estudiante/libro_detalle.html`): portada más grande junto a los datos del libro.
+- Listado de libros del bibliotecario (`bibliotecario/libros_lista.html`): miniatura pequeña en la tabla, sin agrandar el diseño.
+- Formulario de registro de libro (`bibliotecario/libros_nuevo.html`): campo para subir la portada.
+
+**Dónde NO se agregó portada, a propósito:** en el formulario de registrar préstamo. Ese formulario busca un libro por ISBN con retroalimentación en texto (AJAX), no tiene una tarjeta o selección visual del libro, así que agregar una imagen ahí no aportaría y complicaría el formulario sin necesidad.
+
+**Placeholder:** los libros sin portada (los ya existentes y los nuevos que se registren sin subir imagen) muestran `app/static/img/book-placeholder.svg`, un ícono simple en los mismos colores institucionales del resto del sistema. La vista nunca se rompe por falta de portada: la lógica de "¿tiene portada o no?" está centralizada en una sola función (`app/portadas.py:url_portada`) y una sola plantilla reutilizable (`shared/_macros.html:portada_libro`).
+
+**Edición de libro:** no se implementó — el sistema no tiene, hasta esta entrega, una pantalla para editar un libro ya registrado (ni siquiera sin portada). Queda pendiente para una entrega futura; no se creó una pantalla de edición nueva para no salirse del alcance de este cambio.
+
+**Archivos modificados/creados por este cambio:**
+- `app/models/libros.py` — columna `portada_archivo`.
+- `migrations/versions/b4f2a1c9e3d7_portada_libro.py` — migración nueva.
+- `app/portadas.py` — módulo nuevo: validación de extensión/tamaño/firma, guardado con nombre único, borrado y helper de URL con placeholder.
+- `app/forms.py` — campo `portada` (`FileField`) en `LibroForm`.
+- `config.py` — `MAX_CONTENT_LENGTH` (3 MB) como límite global de tamaño de petición.
+- `app/__init__.py` — se registra `url_portada` como función global de Jinja.
+- `app/controllers/bibliotecario/libros.py` — guarda la portada al registrar un libro; el buscador AJAX de libros ahora incluye `portada_url`.
+- `app/controllers/estudiante/catalogo.py` — el buscador AJAX del catálogo también incluye `portada_url`.
+- `app/templates/shared/_macros.html` — macro `portada_libro`, reutilizada en las plantillas server-side.
+- `app/templates/bibliotecario/libros_nuevo.html`, `libros_lista.html`, `estudiante/catalogo.html`, `estudiante/libro_detalle.html` — muestran la portada.
+- `app/static/js/libros_lista.js`, `estudiante_catalogo.js` — las filas/tarjetas generadas por AJAX también incluyen la portada.
+- `app/static/css/estilos.css` — clases `.portada-miniatura`, `.portada-catalogo`, `.portada-detalle` para controlar el tamaño en cada vista.
+- `app/static/img/book-placeholder.svg` — imagen por defecto.
+- `app/static/uploads/portadas/.gitkeep` — mantiene la carpeta en el repositorio sin subir imágenes reales.
+- `.gitignore` — excluye el contenido real de `app/static/uploads/portadas/`.
+- `tests/test_portadas.py` — pruebas nuevas (ver más abajo).
+
+**Pruebas nuevas (`tests/test_portadas.py`):**
+- Registrar un libro sin portada sigue funcionando igual que antes.
+- Registrar un libro con una portada válida guarda el libro y la ruta de la portada, y el listado del bibliotecario la muestra sin errores.
+- Un archivo con extensión inválida (ej. `.txt`) se rechaza con el mensaje correspondiente, sin crear el libro.
+- El formulario de registrar libro renderiza con el campo de portada y `enctype="multipart/form-data"`.
+- El catálogo y el detalle del estudiante cargan sin romperse cuando un libro no tiene portada (se ve el placeholder).
+
+**Resultado de `python -m pytest -v` después de este cambio:**
+
+```
+38 passed, 36 warnings in 13.10s
+```
+
+Las pruebas anteriores a este cambio (33) siguieron pasando sin modificaciones en su lógica; se sumaron 5 pruebas nuevas de portadas.

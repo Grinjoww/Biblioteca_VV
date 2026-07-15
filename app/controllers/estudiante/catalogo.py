@@ -4,6 +4,7 @@ from flask_login import login_required
 from app.controllers.decoradores import requiere_rol
 from app.controllers.estudiante import estudiante_bp
 from app.models import CategoriaLibro, Libro
+from app.portadas import url_portada
 
 
 @estudiante_bp.route('/catalogo')
@@ -37,6 +38,7 @@ def api_buscar_catalogo():
             'editorial': libro.editorial.nombre if libro.editorial else '',
             'categoria': libro.categoria.nombre if libro.categoria else '',
             'stock_disponible': libro.stock_disponible,
+            'portada_url': url_portada(libro.portada_archivo),
         }
         for libro in libros
     ])

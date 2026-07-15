@@ -18,6 +18,9 @@ class Libro(db.Model):
     stock_disponible = db.Column(db.Integer, nullable=False, server_default='0')
     fecha_registro = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
     activo = db.Column(db.Boolean, nullable=False, server_default=db.true())
+    # Ruta relativa a app/static/ (ej. 'uploads/portadas/<uuid>.jpg'). Opcional:
+    # los libros sin portada (incluidos los ya existentes) usan un placeholder.
+    portada_archivo = db.Column(db.String(255), nullable=True)
 
     editorial = db.relationship('Editorial', backref='libros', lazy=True)
     categoria = db.relationship('CategoriaLibro', backref='libros', lazy=True)

@@ -15,6 +15,10 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'clave-temporal-desarrollo')
     SQLALCHEMY_DATABASE_URI = _normalizar_url_postgres(os.environ.get('DATABASE_URL'))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Limite global de tamaño de peticion (protege contra subidas enormes,
+    # incluida la portada de libros: ver app/portadas.py). 3 MB da margen
+    # sobre el maximo de 2 MB de la imagen para el resto de campos del form.
+    MAX_CONTENT_LENGTH = 3 * 1024 * 1024
 
 
 class DevelopmentConfig(Config):

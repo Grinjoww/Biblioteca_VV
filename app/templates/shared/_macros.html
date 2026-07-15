@@ -1,3 +1,8 @@
+{% macro portada_libro(libro, css_class='img-fluid rounded') %}
+<img src="{{ url_portada(libro.portada_archivo) }}" alt="Portada de {{ libro.titulo }}" class="{{ css_class }}" loading="lazy">
+{% endmacro %}
+
+
 {% macro tabla_dinamica(columnas, filas, mensaje_vacio='No hay datos para mostrar.') %}
 <div class="table-responsive">
     <table class="table table-hover table-striped align-middle mb-0">

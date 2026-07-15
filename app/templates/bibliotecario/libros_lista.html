@@ -1,4 +1,5 @@
 {% extends 'bibliotecario/_base.html' %}
+{% from 'shared/_macros.html' import portada_libro %}
 
 {% block title %}Libros - Bibliotecario{% endblock %}
 
@@ -17,6 +18,7 @@
         <table class="table table-hover mb-0 align-middle">
             <thead>
                 <tr>
+                    <th></th>
                     <th>Título</th>
                     <th>ISBN</th>
                     <th>Editorial</th>
@@ -27,6 +29,7 @@
             <tbody id="cuerpo-tabla-libros">
                 {% for libro in libros %}
                 <tr>
+                    <td style="width: 48px;">{{ portada_libro(libro, css_class='portada-miniatura rounded') }}</td>
                     <td>{{ libro.titulo }}</td>
                     <td>{{ libro.isbn }}</td>
                     <td>{{ libro.editorial.nombre if libro.editorial else '-' }}</td>
@@ -34,7 +37,7 @@
                     <td>{{ libro.stock_disponible }} / {{ libro.stock_total }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-muted py-3">No hay libros registrados todavía.</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-3">No hay libros registrados todavía.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -13,12 +13,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderFilas(libros) {
         if (!libros.length) {
-            cuerpo.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No se encontraron libros.</td></tr>';
+            cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No se encontraron libros.</td></tr>';
             return;
         }
         cuerpo.innerHTML = libros.map(function (libro) {
             return (
                 '<tr>' +
+                '<td style="width: 48px;"><img src="' + escaparHtml(libro.portada_url) + '" alt="Portada de ' + escaparHtml(libro.titulo) + '" class="portada-miniatura rounded"></td>' +
                 '<td>' + escaparHtml(libro.titulo) + '</td>' +
                 '<td>' + escaparHtml(libro.isbn) + '</td>' +
                 '<td>' + escaparHtml(libro.editorial || '-') + '</td>' +
@@ -35,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (resp) { return resp.json(); })
             .then(renderFilas)
             .catch(function () {
-                cuerpo.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-3">Error al buscar libros.</td></tr>';
+                cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-3">Error al buscar libros.</td></tr>';
             });
     }
 

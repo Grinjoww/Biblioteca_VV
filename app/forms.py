@@ -1,10 +1,12 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField, FileSize
 from wtforms import (
     StringField, PasswordField, SubmitField, SelectField, IntegerField,
     DateField, TextAreaField, HiddenField
 )
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, Regexp, EqualTo
 
+from app.portadas import EXTENSIONES_PERMITIDAS, MENSAJE_FORMATO_INVALIDO, MENSAJE_TAMANO_INVALIDO, TAMANO_MAXIMO_BYTES
 from app.validators import (
     AnioValido, CedulaEcuatorianaValida, ContieneLetra, CorreoValido,
     EdadEntre, FechaNoFutura, Isbn13Valido, SoloLetras, TelefonoValido,
@@ -74,6 +76,11 @@ class LibroForm(FlaskForm):
         ]
     )
     autores_ids = HiddenField('Autores')
+    portada = FileField('Portada del libro (opcional)', validators=[
+        Optional(),
+        FileAllowed(sorted(EXTENSIONES_PERMITIDAS), message=MENSAJE_FORMATO_INVALIDO),
+        FileSize(max_size=TAMANO_MAXIMO_BYTES, message=MENSAJE_TAMANO_INVALIDO),
+    ])
     submit = SubmitField('Registrar libro')
 
 

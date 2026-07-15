@@ -153,6 +153,29 @@ a:hover {
 }
 
 /* ==========================================================
+   Portadas de libros
+   ========================================================== */
+.portada-miniatura {
+    width: 36px;
+    height: 48px;
+    object-fit: cover;
+}
+
+.portada-catalogo {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+}
+
+.portada-detalle {
+    width: 100%;
+    max-width: 260px;
+    object-fit: cover;
+}
+
+/* ==========================================================
    Varios
    ========================================================== */
 .list-group-item-action {

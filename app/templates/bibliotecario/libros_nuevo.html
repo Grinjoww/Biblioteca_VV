@@ -7,10 +7,19 @@
 
 <div class="card shadow-sm">
     <div class="card-body">
-        <form method="POST" novalidate>
+        <form method="POST" enctype="multipart/form-data" novalidate>
             {{ form.hidden_tag() }}
 
             <div class="row g-3">
+                <div class="col-md-6">
+                    {{ form.portada.label(class="form-label") }}
+                    {{ form.portada(class="form-control", accept=".jpg,.jpeg,.png,.webp") }}
+                    <div class="form-text">JPG, PNG o WEBP, máximo 2 MB. Si no subes ninguna, se muestra una portada genérica.</div>
+                    {% for error in form.portada.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+
+            <div class="row g-3 mt-0">
                 <div class="col-md-4">
                     {{ form.isbn.label(class="form-label") }}
                     {{ form.isbn(class="form-control", maxlength=13, placeholder="9789978000000") }}

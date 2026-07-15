@@ -1,6 +1,7 @@
+import os
 from datetime import date
 
-from flask import jsonify, redirect, render_template, request, url_for, flash
+from flask import current_app, jsonify, redirect, render_template, request, url_for, flash
 from flask_login import login_required
 
 from app.controllers.bibliotecario import bibliotecario_bp
@@ -8,7 +9,12 @@ from app.controllers.decoradores import requiere_rol
 from app.extensions import db
 from app.forms import LibroForm
 from app.models import Autor, CategoriaLibro, Editorial, Ejemplar, Libro, LibroAutor
+from app.portadas import CARPETA_RELATIVA, PortadaInvalida, guardar_portada, url_portada
 from app.validators import es_solo_letras
+
+
+def _carpeta_portadas_absoluta():
+    return os.path.join(current_app.static_folder, *CARPETA_RELATIVA.split('/'))
 
 
 def _siguiente_numero_ejemplar():
@@ -71,6 +77,12 @@ def nuevo_libro():
             flash('Ya existe un libro registrado con ese ISBN.', 'danger')
             return render_template('bibliotecario/libros_nuevo.html', form=form, editoriales=editoriales)
 
+        try:
+            ruta_portada = guardar_portada(form.portada.data, _carpeta_portadas_absoluta())
+        except PortadaInvalida as error:
+            flash(str(error), 'danger')
+            return render_template('bibliotecario/libros_nuevo.html', form=form, editoriales=editoriales)
+
         editorial = _obtener_o_crear_editorial(form.editorial_nombre.data)
 
         libro = Libro(
@@ -85,6 +97,7 @@ def nuevo_libro():
             idioma=form.idioma.data.strip(),
             stock_total=form.stock_inicial.data,
             stock_disponible=form.stock_inicial.data,
+            portada_archivo=ruta_portada,
         )
         db.session.add(libro)
         db.session.flush()
@@ -140,6 +153,7 @@ def api_buscar_libros():
             'categoria': libro.categoria.nombre if libro.categoria else '',
             'stock_disponible': libro.stock_disponible,
             'stock_total': libro.stock_total,
+            'portada_url': url_portada(libro.portada_archivo),
         }
         for libro in libros
     ])

@@ -4,6 +4,7 @@ from app.controllers.auth import auth_bp
 from app.controllers.bibliotecario import bibliotecario_bp
 from app.controllers.estudiante import estudiante_bp
 from app.controllers.gerente import gerente_bp
+from app.portadas import url_portada
 from dotenv import load_dotenv
 import os
 
@@ -28,6 +29,8 @@ def create_app(config_name=None):
     login_manager.login_message = 'Debes iniciar sesión para acceder a esta página.'
     login_manager.login_message_category = 'warning'
     csrf.init_app(app)
+
+    app.jinja_env.globals['url_portada'] = url_portada
 
     with app.app_context():
         from app import models  # noqa: F401

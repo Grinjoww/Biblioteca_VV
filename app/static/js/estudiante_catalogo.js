@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const card = document.createElement('div');
         card.className = 'card h-100 shadow-sm';
 
+        const portada = document.createElement('img');
+        portada.className = 'portada-catalogo';
+        portada.src = libro.portada_url;
+        portada.alt = 'Portada de ' + libro.titulo;
+        portada.loading = 'lazy';
+
         const body = document.createElement('div');
         body.className = 'card-body';
 
@@ -45,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
         body.appendChild(editorial);
         body.appendChild(stockParrafo);
         body.appendChild(enlace);
+        card.appendChild(portada);
         card.appendChild(body);
         col.appendChild(card);
         return col;
