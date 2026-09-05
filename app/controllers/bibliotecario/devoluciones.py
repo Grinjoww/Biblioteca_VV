@@ -20,12 +20,15 @@ from sqlalchemy import text
 
 from app.controllers.bibliotecario import bibliotecario_bp
 from app.controllers.bibliotecario.comun import (
-    ESTADOS_PENDIENTES, agrupar_prestamos, prestamos_de_operacion, resumen_operacion,
+    ESTADOS_PENDIENTES, paginar_operaciones, prestamos_de_operacion, resumen_operacion,
 )
 from app.controllers.decoradores import requiere_rol
 from app.extensions import db
 from app.forms import DevolucionForm, DevolucionLoteForm
 from app.models import DanioPerdida, Devolucion, HistorialInventario, Prestamo
+from app.paginacion import (
+    POR_PAGINA, argumentos_activos, opcion_filtro, pagina_actual, texto_filtro,
+)
 
 ESTADOS_EJEMPLAR = ('bueno', 'dañado', 'perdido')
 
@@ -95,14 +98,31 @@ def _registrar_devolucion_prestamo(prestamo, estado_ejemplar, observaciones):
 @login_required
 @requiere_rol('bibliotecario')
 def listado_devoluciones():
-    prestamos = (
-        Prestamo.query.filter(Prestamo.estado.in_(ESTADOS_PENDIENTES))
-        .order_by(Prestamo.fecha_limite)
-        .all()
+    """
+    Pendientes / Completadas / Todas.
+
+    Una operacion completamente devuelta ya no tiene libros pendientes, pero
+    sigue siendo consultable desde la pestaña "Completadas": no se pierde de
+    vista, solo deja de estorbar en el trabajo del dia.
+    """
+    termino = texto_filtro(request, 'q')
+    estado = opcion_filtro(
+        request, 'estado', ('pendientes', 'completadas', 'todas'), por_defecto='pendientes'
     )
+
+    paginacion, operaciones = paginar_operaciones(
+        termino=termino,
+        estado=estado,
+        page=pagina_actual(request),
+        per_page=POR_PAGINA,
+    )
+
     return render_template(
         'bibliotecario/devoluciones_lista.html',
-        operaciones=agrupar_prestamos(prestamos),
+        paginacion=paginacion,
+        operaciones=operaciones,
+        filtros={'q': termino, 'estado': estado},
+        argumentos=argumentos_activos(q=termino, estado=estado),
         hoy=date.today(),
     )
 

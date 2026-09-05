@@ -14,7 +14,7 @@ de un solo libro, sin necesidad de migrar datos.
 from datetime import date
 
 from app.extensions import db
-from app.models import ConfiguracionSistema, Prestamo
+from app.models import ConfiguracionSistema, Estudiante, Prestamo
 
 # Un prestamo "ocupa cupo" mientras no se haya devuelto: tanto 'activo' como
 # 'vencido' significan que el estudiante todavia tiene el libro.
@@ -175,3 +175,93 @@ def generar_codigo_grupo():
         except (TypeError, ValueError):
             siguiente = 1
     return f'{prefijo}{siguiente:04d}'
+
+
+# ---------------------------------------------------------------------------
+# Listado paginado de OPERACIONES (prestamos y devoluciones)
+# ---------------------------------------------------------------------------
+
+# Estados de operacion que aceptan los listados. 'todas' no filtra.
+ESTADOS_OPERACION = ('pendientes', 'completadas', 'vencidas', 'todas')
+
+
+def _clave_operacion_sql():
+    """
+    Misma clave que clave_operacion(), pero calculada en SQL.
+
+    Agrupa por `grupo_prestamo` y, cuando es NULL (prestamos anteriores a la
+    funcionalidad), por el propio id: cada uno queda como su propia operacion.
+    """
+    return db.func.coalesce(
+        Prestamo.grupo_prestamo,
+        db.func.concat('P#', db.cast(Prestamo.id, db.String)),
+    )
+
+
+def paginar_operaciones(termino='', estado='todas', page=1, per_page=10, hoy=None):
+    """
+    Devuelve (paginacion, operaciones) filtrando y paginando EN BACKEND.
+
+    La consulta agrupa los prestamos por operacion y pagina sobre esas
+    operaciones (no sobre prestamos sueltos), asi una operacion de 4 libros
+    ocupa una fila y no cuatro. Los estados 'pendientes'/'completadas' se
+    calculan con HAVING sobre el grupo completo: no hay ninguna columna de
+    estado derivado en la base de datos.
+    """
+    hoy = hoy or date.today()
+    clave = _clave_operacion_sql()
+
+    total_libros = db.func.count(Prestamo.id)
+    devueltos = db.func.count(Prestamo.id).filter(Prestamo.estado == 'devuelto')
+    vencidos = db.func.count(Prestamo.id).filter(
+        db.and_(Prestamo.estado != 'devuelto', Prestamo.fecha_limite < hoy)
+    )
+    primero = db.func.min(Prestamo.id)
+
+    consulta = db.select(primero).group_by(clave)
+
+    if termino:
+        patron = f'%{termino}%'
+        # El termino se busca en CUALQUIER prestamo de la operacion (codigo del
+        # prestamo, codigo de la operacion, cedula o nombre del estudiante) y se
+        # filtra por clave para que el grupo llegue entero al HAVING.
+        coincidencias = (
+            db.select(clave)
+            .join(Estudiante, Estudiante.id == Prestamo.estudiante_id)
+            .where(db.or_(
+                Prestamo.codigo_prestamo.ilike(patron),
+                Prestamo.grupo_prestamo.ilike(patron),
+                Estudiante.cedula.ilike(patron),
+                Estudiante.nombres.ilike(patron),
+                Estudiante.apellidos.ilike(patron),
+                (Estudiante.nombres + ' ' + Estudiante.apellidos).ilike(patron),
+            ))
+        )
+        consulta = consulta.where(clave.in_(coincidencias))
+
+    if estado == 'pendientes':
+        consulta = consulta.having(devueltos < total_libros)
+    elif estado == 'completadas':
+        consulta = consulta.having(devueltos == total_libros)
+    elif estado == 'vencidas':
+        consulta = consulta.having(vencidos > 0)
+
+    # Lo mas reciente primero: el id del primer prestamo marca cuando se creo
+    # la operacion.
+    consulta = consulta.order_by(primero.desc())
+
+    paginacion = db.paginate(consulta, page=page, per_page=per_page, error_out=False)
+
+    operaciones = []
+    if paginacion.items:
+        encontrados = {
+            prestamo.id: prestamo
+            for prestamo in Prestamo.query.filter(Prestamo.id.in_(paginacion.items)).all()
+        }
+        representantes = [
+            encontrados[identificador]
+            for identificador in paginacion.items if identificador in encontrados
+        ]
+        operaciones = agrupar_prestamos(representantes, hoy=hoy)
+
+    return paginacion, operaciones

@@ -18,6 +18,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{# Auto-ocultado de mensajes flash, compartido por todas las pantallas. #}
+<script src="{{ url_for('static', filename='js/mensajes.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

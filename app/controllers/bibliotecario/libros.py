@@ -9,6 +9,10 @@ from app.controllers.decoradores import requiere_rol
 from app.extensions import db
 from app.forms import LibroForm
 from app.models import Autor, CategoriaLibro, Editorial, Ejemplar, Libro, LibroAutor
+from app.paginacion import (
+    POR_PAGINA, argumentos_activos, entero_filtro, id_nuevo, opcion_filtro,
+    pagina_actual, texto_filtro,
+)
 from app.portadas import CARPETA_RELATIVA, PortadaInvalida, guardar_portada, url_portada
 from app.validators import es_solo_letras
 
@@ -43,8 +47,52 @@ def _obtener_o_crear_editorial(nombre):
 @login_required
 @requiere_rol('bibliotecario')
 def listado_libros():
-    libros = Libro.query.order_by(Libro.titulo).all()
-    return render_template('bibliotecario/libros_lista.html', libros=libros)
+    termino = texto_filtro(request, 'q')
+    categoria_id = entero_filtro(request, 'categoria')
+    disponibilidad = opcion_filtro(request, 'disponibilidad', ('disponibles', 'agotados'))
+
+    consulta = Libro.query
+    if termino:
+        patron = f'%{termino}%'
+        # El autor vive en otra tabla: se busca con un subquery para no
+        # duplicar filas del libro cuando tiene varios autores.
+        libros_del_autor = (
+            db.session.query(LibroAutor.libro_id)
+            .join(Autor, Autor.id == LibroAutor.autor_id)
+            .filter(db.or_(
+                Autor.nombres.ilike(patron),
+                Autor.apellidos.ilike(patron),
+                (Autor.nombres + ' ' + Autor.apellidos).ilike(patron),
+            ))
+        )
+        consulta = consulta.filter(db.or_(
+            Libro.titulo.ilike(patron),
+            Libro.isbn.ilike(patron),
+            Libro.id.in_(libros_del_autor),
+        ))
+    if categoria_id:
+        consulta = consulta.filter(Libro.categoria_id == categoria_id)
+    if disponibilidad == 'disponibles':
+        consulta = consulta.filter(Libro.stock_disponible > 0)
+    elif disponibilidad == 'agotados':
+        consulta = consulta.filter(Libro.stock_disponible == 0)
+
+    # Lo mas reciente primero: el ultimo libro registrado encabeza la lista.
+    paginacion = consulta.order_by(Libro.id.desc()).paginate(
+        page=pagina_actual(request), per_page=POR_PAGINA, error_out=False
+    )
+
+    return render_template(
+        'bibliotecario/libros_lista.html',
+        paginacion=paginacion,
+        libros=paginacion.items,
+        categorias=CategoriaLibro.query.order_by(CategoriaLibro.nombre).all(),
+        filtros={'q': termino, 'categoria': categoria_id, 'disponibilidad': disponibilidad},
+        argumentos=argumentos_activos(
+            q=termino, categoria=categoria_id, disponibilidad=disponibilidad
+        ),
+        nuevo_id=id_nuevo(request),
+    )
 
 
 @bibliotecario_bp.route('/libros/nuevo', methods=['GET', 'POST'])
@@ -126,7 +174,8 @@ def nuevo_libro():
             f'Libro "{libro.titulo}" registrado con {form.stock_inicial.data} ejemplar(es).',
             'success'
         )
-        return redirect(url_for('bibliotecario.listado_libros'))
+        # `nuevo` pinta el badge "Nuevo" en el listado; no se guarda en la BD.
+        return redirect(url_for('bibliotecario.listado_libros', nuevo=libro.id))
 
     return render_template('bibliotecario/libros_nuevo.html', form=form, editoriales=editoriales)
 

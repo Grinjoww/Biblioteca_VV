@@ -15,14 +15,18 @@ from sqlalchemy import text
 
 from app.controllers.bibliotecario import bibliotecario_bp
 from app.controllers.bibliotecario.comun import (
-    ESTADOS_PENDIENTES, agrupar_prestamos, calcular_cupos, calcular_edad,
-    contar_prestamos_vencidos, generar_codigo_grupo, iniciales,
-    max_prestamos_activos, prestamos_de_operacion, resumen_operacion,
+    ESTADOS_OPERACION, calcular_cupos, calcular_edad, contar_prestamos_vencidos,
+    generar_codigo_grupo, iniciales, max_prestamos_activos, paginar_operaciones,
+    prestamos_de_operacion, resumen_operacion,
 )
 from app.controllers.decoradores import requiere_rol
 from app.extensions import db
 from app.forms import PrestamoForm
 from app.models import Ejemplar, Estudiante, Libro, Prestamo
+from app.paginacion import (
+    POR_PAGINA, argumentos_activos, id_nuevo, opcion_filtro, pagina_actual,
+    texto_filtro,
+)
 from app.portadas import url_portada
 
 
@@ -165,14 +169,23 @@ def _evaluar_libro(isbn):
 @login_required
 @requiere_rol('bibliotecario')
 def listado_prestamos():
-    prestamos = (
-        Prestamo.query.filter(Prestamo.estado.in_(ESTADOS_PENDIENTES))
-        .order_by(Prestamo.fecha_limite)
-        .all()
+    termino = texto_filtro(request, 'q')
+    estado = opcion_filtro(request, 'estado', ESTADOS_OPERACION, por_defecto='pendientes')
+
+    paginacion, operaciones = paginar_operaciones(
+        termino=termino,
+        estado=estado,
+        page=pagina_actual(request),
+        per_page=POR_PAGINA,
     )
+
     return render_template(
         'bibliotecario/prestamos_lista.html',
-        operaciones=agrupar_prestamos(prestamos),
+        paginacion=paginacion,
+        operaciones=operaciones,
+        filtros={'q': termino, 'estado': estado},
+        argumentos=argumentos_activos(q=termino, estado=estado),
+        nuevo_id=id_nuevo(request),
         hoy=date.today(),
     )
 
@@ -237,6 +250,7 @@ def nuevo_prestamo():
         grupo = generar_codigo_grupo() if len(isbns) > 1 else None
         ejemplares_usados = []
         titulos = []
+        creados = []
 
         try:
             for isbn in isbns:
@@ -268,6 +282,7 @@ def nuevo_prestamo():
 
                 ejemplares_usados.append(ejemplar.id)
                 titulos.append(libro.titulo)
+                creados.append(prestamo.id)
 
             db.session.commit()
         except ValueError as error:
@@ -277,6 +292,9 @@ def nuevo_prestamo():
             db.session.rollback()
             return _volver_con_error('No se pudo registrar el préstamo. No se guardó ningún libro.')
 
+        # Representante de la operacion: el primer prestamo creado. Con el se
+        # pinta el badge "Nuevo" sobre la operacion completa, no sobre cada libro.
+        representante_id = creados[0]
         nombre = f'{estudiante.nombres} {estudiante.apellidos}'
         if grupo:
             flash(
@@ -289,7 +307,7 @@ def nuevo_prestamo():
                 f'Préstamo registrado correctamente para {nombre} · Libro: {titulos[0]}.',
                 'success'
             )
-        return redirect(url_for('bibliotecario.listado_prestamos'))
+        return redirect(url_for('bibliotecario.listado_prestamos', nuevo=representante_id))
 
     return render_template('bibliotecario/prestamos_nuevo.html', form=form)
 

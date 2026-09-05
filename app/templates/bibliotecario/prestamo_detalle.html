@@ -44,6 +44,7 @@
                     <th>Ejemplar</th>
                     <th>Fecha límite</th>
                     <th>Estado</th>
+                    <th>Devolución</th>
                 </tr>
             </thead>
             <tbody>
@@ -67,6 +68,29 @@
                         <span class="badge text-bg-danger">Vencido</span>
                         {% else %}
                         <span class="badge text-bg-primary">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {# Estado con el que volvio cada libro, mas el detalle del daño/pérdida. #}
+                        {% set devolucion = prestamo.devolucion %}
+                        {% if devolucion %}
+                        <span class="badge {{ {'bueno': 'text-bg-success', 'dañado': 'text-bg-warning', 'perdido': 'text-bg-danger'}.get(devolucion.estado_ejemplar, 'text-bg-secondary') }}">
+                            {{ devolucion.estado_ejemplar | capitalize }}
+                        </span>
+                        <div class="text-muted small">
+                            {{ devolucion.fecha_devolucion.strftime('%d/%m/%Y') }}
+                            {% if devolucion.multa_generada and devolucion.multa_generada > 0 %}
+                            · Multa ${{ devolucion.multa_generada }}
+                            {% endif %}
+                        </div>
+                        {% if devolucion.observaciones %}
+                        <div class="text-muted small fst-italic">{{ devolucion.observaciones }}</div>
+                        {% endif %}
+                        {% for danio in devolucion.danios_perdidas %}
+                        <div class="text-muted small">{{ danio.tipo | capitalize }}: {{ danio.descripcion }}</div>
+                        {% endfor %}
+                        {% else %}
+                        <span class="text-muted small">—</span>
                         {% endif %}
                     </td>
                 </tr>

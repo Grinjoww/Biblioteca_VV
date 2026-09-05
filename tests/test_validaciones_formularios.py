@@ -95,7 +95,8 @@ def test_registrar_libro_valido_exitoso(client, login, usuario_bibliotecario, db
     ))
 
     assert respuesta.status_code == 302
-    assert respuesta.headers['Location'] == '/bibliotecario/libros'
+    # El redirect agrega ?nuevo=<id> para marcar el registro recien creado.
+    assert respuesta.headers['Location'].startswith('/bibliotecario/libros')
 
     listado = client.get('/bibliotecario/libros')
     assert 'Libro de prueba valido' in listado.get_data(as_text=True)
@@ -189,7 +190,8 @@ def test_registrar_estudiante_telefono_10_digitos_valido(client, login, usuario_
     ))
 
     assert respuesta.status_code == 302
-    assert respuesta.headers['Location'] == '/bibliotecario/estudiantes'
+    # El redirect agrega ?nuevo=<id> para marcar el registro recien creado.
+    assert respuesta.headers['Location'].startswith('/bibliotecario/estudiantes')
 
 
 def test_registrar_estudiante_fecha_nacimiento_futura(client, login, usuario_bibliotecario):
@@ -224,7 +226,8 @@ def test_registrar_estudiante_valido_exitoso(client, login, usuario_bibliotecari
     ))
 
     assert respuesta.status_code == 302
-    assert respuesta.headers['Location'] == '/bibliotecario/estudiantes'
+    # El redirect agrega ?nuevo=<id> para marcar el registro recien creado.
+    assert respuesta.headers['Location'].startswith('/bibliotecario/estudiantes')
 
     listado = client.get('/bibliotecario/estudiantes')
     assert 'Maria Fernanda' in listado.get_data(as_text=True)

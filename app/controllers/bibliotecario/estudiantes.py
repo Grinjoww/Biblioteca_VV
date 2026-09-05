@@ -9,6 +9,10 @@ from app.controllers.decoradores import requiere_rol
 from app.extensions import db
 from app.forms import EstudianteForm
 from app.models import Carrera, Estudiante, Usuario
+from app.paginacion import (
+    POR_PAGINA, argumentos_activos, entero_filtro, id_nuevo, opcion_filtro,
+    pagina_actual, texto_filtro,
+)
 from app.validators import es_cedula_ecuatoriana_valida
 
 
@@ -20,8 +24,39 @@ def _generar_password_temporal():
 @login_required
 @requiere_rol('bibliotecario')
 def listado_estudiantes():
-    estudiantes = Estudiante.query.order_by(Estudiante.apellidos, Estudiante.nombres).all()
-    return render_template('bibliotecario/estudiantes_lista.html', estudiantes=estudiantes)
+    termino = texto_filtro(request, 'q')
+    estado = opcion_filtro(request, 'estado', ('activo', 'suspendido'))
+    carrera_id = entero_filtro(request, 'carrera')
+
+    consulta = Estudiante.query
+    if termino:
+        patron = f'%{termino}%'
+        consulta = consulta.filter(db.or_(
+            Estudiante.cedula.ilike(patron),
+            Estudiante.nombres.ilike(patron),
+            Estudiante.apellidos.ilike(patron),
+            (Estudiante.nombres + ' ' + Estudiante.apellidos).ilike(patron),
+            Estudiante.correo.ilike(patron),
+        ))
+    if estado:
+        consulta = consulta.filter(Estudiante.estado == estado)
+    if carrera_id:
+        consulta = consulta.filter(Estudiante.carrera_id == carrera_id)
+
+    # Lo mas reciente primero: el ultimo estudiante registrado encabeza la lista.
+    paginacion = consulta.order_by(Estudiante.id.desc()).paginate(
+        page=pagina_actual(request), per_page=POR_PAGINA, error_out=False
+    )
+
+    return render_template(
+        'bibliotecario/estudiantes_lista.html',
+        paginacion=paginacion,
+        estudiantes=paginacion.items,
+        carreras=Carrera.query.order_by(Carrera.nombre).all(),
+        filtros={'q': termino, 'estado': estado, 'carrera': carrera_id},
+        argumentos=argumentos_activos(q=termino, estado=estado, carrera=carrera_id),
+        nuevo_id=id_nuevo(request),
+    )
 
 
 @bibliotecario_bp.route('/estudiantes/nuevo', methods=['GET', 'POST'])
@@ -83,7 +118,8 @@ def nuevo_estudiante():
             f'Contraseña temporal: {password_temporal} (el estudiante deberá cambiarla al ingresar).',
             'success'
         )
-        return redirect(url_for('bibliotecario.listado_estudiantes'))
+        # `nuevo` pinta el badge "Nuevo" en el listado; no se guarda en la BD.
+        return redirect(url_for('bibliotecario.listado_estudiantes', nuevo=estudiante.id))
 
     return render_template('bibliotecario/estudiantes_nuevo.html', form=form)
 

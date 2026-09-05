@@ -57,7 +57,8 @@ def test_registrar_libro_sin_portada_sigue_funcionando(client, login, usuario_bi
     )
 
     assert respuesta.status_code == 302
-    assert respuesta.headers['Location'] == '/bibliotecario/libros'
+    # El redirect agrega ?nuevo=<id> para marcar el registro recien creado.
+    assert respuesta.headers['Location'].startswith('/bibliotecario/libros')
 
     libro = Libro.query.filter_by(isbn='9780306406157').first()
     assert libro is not None
