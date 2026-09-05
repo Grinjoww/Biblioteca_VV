@@ -232,3 +232,66 @@ a:hover {
         row-gap: 0.5rem;
     }
 }
+
+/* ==========================================================
+   Registro de prestamo (tarjetas de estudiante/libro y proceso)
+   ========================================================== */
+.avatar-iniciales {
+    width: 64px;
+    height: 64px;
+    flex: 0 0 64px;
+    border-radius: 50%;
+    background: linear-gradient(160deg, var(--uteq-green) 0%, var(--uteq-green-dark) 100%);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.portada-mini {
+    width: 72px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+    background-color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.portada-mini-tabla {
+    width: 44px;
+    height: 62px;
+    object-fit: cover;
+    border-radius: 4px;
+    background-color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Capa de "Procesando...": bloquea la pantalla mientras se guarda el lote,
+   para que no se pueda enviar el formulario dos veces. */
+.overlay-procesando {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    background-color: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+@media (max-width: 576px) {
+    .avatar-iniciales {
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        font-size: 1.1rem;
+    }
+
+    .portada-mini {
+        width: 56px;
+        height: 78px;
+    }
+}

@@ -3,41 +3,43 @@
 {% block title %}Devoluciones - Bibliotecario{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Préstamos activos — registrar devolución</h2>
+<h2 class="mb-4">Préstamos pendientes — registrar devolución</h2>
 
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
             <thead>
                 <tr>
-                    <th>Código</th>
+                    <th>Operación</th>
                     <th>Estudiante</th>
-                    <th>Libro</th>
+                    <th class="text-center">Libros</th>
+                    <th class="text-center">Pendientes</th>
                     <th>Fecha límite</th>
                     <th>Estado</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
-                {% for prestamo in prestamos %}
+                {% for operacion in operaciones %}
                 <tr>
-                    <td>{{ prestamo.codigo_prestamo }}</td>
-                    <td>{{ prestamo.estudiante.nombres }} {{ prestamo.estudiante.apellidos }}</td>
-                    <td>{{ prestamo.ejemplar.libro.titulo }}</td>
-                    <td>{{ prestamo.fecha_limite.strftime('%d/%m/%Y') }}</td>
                     <td>
-                        {% if prestamo.fecha_limite < hoy %}
-                        <span class="badge text-bg-danger">Vencido</span>
-                        {% else %}
-                        <span class="badge text-bg-success">A tiempo</span>
+                        <span class="fw-semibold">{{ operacion.codigo }}</span>
+                        {% if not operacion.es_grupo %}
+                        <div class="text-muted small">Préstamo individual</div>
                         {% endif %}
                     </td>
-                    <td>
-                        <a href="{{ url_for('bibliotecario.registrar_devolucion', prestamo_id=prestamo.id) }}" class="btn btn-sm btn-outline-primary">Registrar devolución</a>
+                    <td>{{ operacion.estudiante.nombres }} {{ operacion.estudiante.apellidos }}</td>
+                    <td class="text-center">{{ operacion.total }}</td>
+                    <td class="text-center">{{ operacion.pendientes }}</td>
+                    <td>{{ operacion.fecha_limite.strftime('%d/%m/%Y') }}</td>
+                    <td><span class="badge text-bg-{{ operacion.estado_badge }}">{{ operacion.estado }}</span></td>
+                    <td class="text-end">
+                        <a href="{{ url_for('bibliotecario.devolucion_operacion', prestamo_id=operacion.representante_id) }}"
+                           class="btn btn-sm btn-outline-primary">Registrar devolución</a>
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" class="text-center text-muted py-3">No hay préstamos activos.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-3">No hay préstamos pendientes.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

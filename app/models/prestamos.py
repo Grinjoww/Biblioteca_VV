@@ -14,6 +14,12 @@ class Prestamo(db.Model):
     estado = db.Column(db.String(10), nullable=False, server_default='activo')
     renovaciones = db.Column(db.Integer, nullable=False, server_default='0')
     observaciones = db.Column(db.Text, nullable=True)
+    # Codigo de la OPERACION en la que se registro el prestamo (ej. 'GRP-2026-0001').
+    # Varios prestamos creados en un mismo registro comparten este codigo, pero cada
+    # uno sigue siendo un prestamo individual (fechas, multa y devolucion propias).
+    # Es NULL en los prestamos anteriores a esta funcionalidad: en ese caso se tratan
+    # como una operacion de un solo libro.
+    grupo_prestamo = db.Column(db.String(20), nullable=True)
 
     estudiante = db.relationship('Estudiante', backref='prestamos', lazy=True)
     ejemplar = db.relationship('Ejemplar', backref='prestamos', lazy=True)

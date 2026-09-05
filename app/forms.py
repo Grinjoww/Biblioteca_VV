@@ -128,18 +128,18 @@ class EstudianteForm(FlaskForm):
 
 
 class PrestamoForm(FlaskForm):
-    # Cedula/ISBN aqui son campos de BUSQUEDA de un estudiante/libro que ya
-    # deben existir (no se crean aqui), por eso se valida solo el formato
-    # y no el digito verificador: exigirlo bloquearia prestamos para
-    # estudiantes o libros de prueba/demo registrados antes de esta regla.
+    # Cedula aqui es un campo de BUSQUEDA de un estudiante que ya debe existir
+    # (no se crea aqui), por eso se valida solo el formato y no el digito
+    # verificador: exigirlo bloquearia prestamos para estudiantes de
+    # prueba/demo registrados antes de esa regla.
     cedula = StringField('Cédula del estudiante', validators=[
         DataRequired(message='La cédula es obligatoria.'),
         Regexp(r'^[0-9]{10}$', message='La cédula debe contener exactamente 10 dígitos.')
     ])
-    isbn = StringField('ISBN del libro', validators=[
-        DataRequired(message='El ISBN es obligatorio.'),
-        Regexp(r'^[0-9]{13}$', message='El ISBN debe contener exactamente 13 dígitos numéricos.')
-    ])
+    # Lista de ISBN seleccionados para este prestamo, separados por coma. La
+    # arma la pantalla al ir agregando libros; el contenido se revalida
+    # completo en el servidor (existencia, stock, duplicados y cupos).
+    isbns = HiddenField('Libros a prestar')
     observaciones = TextAreaField('Observaciones', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Registrar préstamo')
 
@@ -152,3 +152,15 @@ class DevolucionForm(FlaskForm):
     )
     observaciones = TextAreaField('Observaciones', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Registrar devolución')
+
+
+class DevolucionLoteForm(FlaskForm):
+    """
+    Devolucion de varios libros de una misma operacion.
+
+    Los campos por libro (casilla, estado y observacion) son dinamicos: se
+    generan en la plantilla a partir de los prestamos pendientes y se leen
+    desde request.form en el controlador. Este form aporta el token CSRF y el
+    boton, que es lo unico fijo.
+    """
+    submit = SubmitField('Registrar devolución seleccionada')
