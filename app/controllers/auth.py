@@ -27,7 +27,12 @@ def login():
             flash('Usuario o contraseña incorrectos', 'danger')
             return render_template('auth/login.html', form=form)
 
-        if usuario.bloqueado:
+        # `and usuario.fecha_bloqueo`: una fila con bloqueado=TRUE pero sin
+        # fecha_bloqueo (edicion manual de la BD, restauracion parcial) hacia
+        # reventar la resta con TypeError -> error 500 en el login. Sin fecha
+        # no se puede saber cuando expira el bloqueo, asi que se trata como no
+        # bloqueada y el flujo sigue normal (contraseña, activo, etc.).
+        if usuario.bloqueado and usuario.fecha_bloqueo:
             tiempo_transcurrido = datetime.utcnow() - usuario.fecha_bloqueo
             if tiempo_transcurrido.total_seconds() < TIEMPO_BLOQUEO_MINUTOS * 60:
                 minutos_restantes = TIEMPO_BLOQUEO_MINUTOS - int(tiempo_transcurrido.total_seconds() / 60)

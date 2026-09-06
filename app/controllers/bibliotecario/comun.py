@@ -20,16 +20,33 @@ from app.models import ConfiguracionSistema, Estudiante, Prestamo
 # 'vencido' significan que el estudiante todavia tiene el libro.
 ESTADOS_PENDIENTES = ('activo', 'vencido')
 
+# Tope usado SOLO cuando configuracion_sistema.max_prestamos_activos falta o
+# tiene un valor invalido. Coincide con el que siembra database/seed.py, para
+# que un despliegue sin configurar se comporte como el sistema espera en vez
+# de quedarse sin limite. El valor real, si es valido, siempre manda.
+MAX_PRESTAMOS_POR_DEFECTO = 3
+
 
 def max_prestamos_activos():
-    """Limite configurable de prestamos simultaneos; None = sin limite."""
+    """
+    Limite de prestamos simultaneos por estudiante.
+
+    Sigue siendo configurable: manda el valor de
+    configuracion_sistema.max_prestamos_activos siempre que sea un entero
+    positivo. Si la fila falta, es NULL, no es numerica o no es positiva, se
+    usa MAX_PRESTAMOS_POR_DEFECTO en vez de quedarse sin limite: una
+    configuracion rota no debe desactivar en silencio la regla de negocio.
+    """
     config = ConfiguracionSistema.query.filter_by(clave='max_prestamos_activos').first()
     if config is None:
-        return None
+        return MAX_PRESTAMOS_POR_DEFECTO
     try:
-        return int(config.valor)
+        maximo = int(config.valor)
     except (TypeError, ValueError):
-        return None
+        return MAX_PRESTAMOS_POR_DEFECTO
+    # Un 0 o un negativo dejarian a todos sin poder pedir libros (o, peor,
+    # se interpretarian como "sin limite"): tampoco son configuraciones validas.
+    return maximo if maximo > 0 else MAX_PRESTAMOS_POR_DEFECTO
 
 
 def calcular_edad(fecha_nacimiento, hoy=None):
