@@ -174,10 +174,26 @@ v_anio VARCHAR(4);
 BEGIN
     v_anio := EXTRACT(YEAR FROM CURRENT_DATE)::VARCHAR;
 
-SELECT COALESCE(MAX(CAST(SUBSTRING(codigo_prestamo FROM 10) AS INTEGER)), 0) + 1
+-- Serializa la generacion del codigo: sin esto dos transacciones simultaneas
+-- podrian leer el mismo MAX y proponer el mismo codigo (violacion de la
+-- restriccion unica). Es un lock TRANSACCIONAL: se libera solo al COMMIT o
+-- ROLLBACK, sin necesidad de liberarlo a mano. La clave no es un numero
+-- arbitrario: se deriva del nombre de la funcion (hashtext) y del anio, que
+-- es justamente el ambito de la numeracion.
+    PERFORM pg_advisory_xact_lock(hashtext('generar_codigo_prestamo'), v_anio::INTEGER);
+
+-- La parte numerica arranca justo despues del prefijo 'P-<anio>-' (posicion 8
+-- con anios de 4 digitos). Antes se usaba FROM 10, que solo leia los dos
+-- ultimos digitos: con 'P-2026-0100' devolvia '00', el MAX se quedaba en 99 y
+-- se regeneraba un codigo ya existente (duplicate key). Se calcula el corte
+-- desde el largo real del prefijo para no depender de una posicion magica.
+-- El filtro por expresion regular evita que un codigo con sufijo no numerico
+-- rompa el CAST.
+SELECT COALESCE(MAX(CAST(SUBSTRING(codigo_prestamo FROM LENGTH('P-' || v_anio || '-') + 1) AS INTEGER)), 0) + 1
 INTO v_siguiente
 FROM prestamos
-WHERE codigo_prestamo LIKE 'P-' || v_anio || '-%';
+WHERE codigo_prestamo LIKE 'P-' || v_anio || '-%'
+  AND codigo_prestamo ~ ('^P-' || v_anio || '-[0-9]+$');
 
 v_codigo := 'P-' || v_anio || '-' || LPAD(v_siguiente::TEXT, 4, '0');
 
