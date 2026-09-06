@@ -53,6 +53,7 @@
                     <th>Correo</th>
                     <th>Carrera</th>
                     <th>Estado</th>
+                    <th class="text-end">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -70,9 +71,13 @@
                             {{ estudiante.estado }}
                         </span>
                     </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('bibliotecario.editar_estudiante', estudiante_id=estudiante.id) }}"
+                           class="btn btn-sm btn-outline-secondary">Editar</a>
+                    </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-muted py-3">No se encontraron estudiantes con esos criterios.</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-3">No se encontraron estudiantes con esos criterios.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash
 from app.controllers.bibliotecario import bibliotecario_bp
 from app.controllers.decoradores import requiere_rol
 from app.extensions import db
-from app.forms import EstudianteForm
+from app.forms import EditarEstudianteForm, EstudianteForm
 from app.models import Carrera, Estudiante, Usuario
 from app.paginacion import (
     POR_PAGINA, argumentos_activos, entero_filtro, id_nuevo, opcion_filtro,
@@ -129,6 +129,66 @@ def nuevo_estudiante():
         ))
 
     return render_template('bibliotecario/estudiantes_nuevo.html', form=form)
+
+
+@bibliotecario_bp.route('/estudiantes/<int:estudiante_id>/editar', methods=['GET', 'POST'])
+@login_required
+@requiere_rol('bibliotecario')
+def editar_estudiante(estudiante_id):
+    """
+    Edicion administrativa de un estudiante YA registrado: nombres,
+    apellidos, carrera, correo y telefono. La cedula NUNCA se toca aqui:
+    EditarEstudianteForm no tiene ese campo, asi que no hay ningun valor de
+    cedula que pueda llegar por POST y usarse para nada. `estudiante.cedula`
+    se sigue leyendo del registro existente en la plantilla.
+    """
+    estudiante = db.session.get(Estudiante, estudiante_id)
+    if estudiante is None:
+        flash('El estudiante indicado no existe.', 'danger')
+        return redirect(url_for('bibliotecario.listado_estudiantes'))
+
+    form = EditarEstudianteForm(obj=estudiante)
+    form.carrera_id.choices = [(0, '-- Selecciona una carrera --')] + [
+        (carrera.id, f'{carrera.nombre} ({carrera.facultad.nombre})')
+        for carrera in Carrera.query.join(Carrera.facultad).order_by(Carrera.nombre)
+    ]
+
+    if form.validate_on_submit():
+        # Mismo motivo que en nuevo_estudiante(): normalizar ANTES de buscar
+        # duplicados. `Estudiante.id != estudiante.id` deja que el propio
+        # correo del estudiante no se marque como "duplicado" de si mismo.
+        correo = form.correo.data.strip()
+
+        duplicado = Estudiante.query.filter(
+            Estudiante.correo == correo, Estudiante.id != estudiante.id
+        ).first()
+        if duplicado:
+            flash('Ya existe otro estudiante registrado con ese correo.', 'danger')
+            return render_template(
+                'bibliotecario/estudiantes_editar.html', form=form, estudiante=estudiante
+            )
+
+        estudiante.nombres = form.nombres.data.strip()
+        estudiante.apellidos = form.apellidos.data.strip()
+        estudiante.correo = correo
+        estudiante.telefono = (form.telefono.data or '').strip() or None
+        estudiante.carrera_id = form.carrera_id.data
+        # cedula, estado y usuario_id no forman parte de este formulario:
+        # quedan exactamente como estaban.
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('No se pudo actualizar el estudiante. Verifica los datos ingresados.', 'danger')
+            return render_template(
+                'bibliotecario/estudiantes_editar.html', form=form, estudiante=estudiante
+            )
+
+        flash('Estudiante actualizado correctamente.', 'success')
+        return redirect(url_for('bibliotecario.listado_estudiantes'))
+
+    return render_template('bibliotecario/estudiantes_editar.html', form=form, estudiante=estudiante)
 
 
 @bibliotecario_bp.route('/api/estudiantes/verificar-cedula')

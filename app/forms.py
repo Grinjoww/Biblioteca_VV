@@ -140,6 +140,61 @@ class EstudianteForm(FlaskForm):
     submit = SubmitField('Registrar estudiante')
 
 
+class TelefonoForm(FlaskForm):
+    """
+    Autoservicio del estudiante sobre su propio perfil: el UNICO dato que
+    puede tocar es su telefono. A proposito no lleva cedula, nombres,
+    apellidos, carrera, correo ni estado: como esos campos no existen en este
+    formulario, no hay nada que un POST manipulado pueda usar para cambiarlos
+    por esta via (el controlador, ademas, toma el estudiante siempre de
+    current_user, nunca de un id recibido por POST).
+
+    Telefono es opcional (igual que en EstudianteForm/EditarEstudianteForm):
+    dejar el campo vacio es valido y significa "quitar el telefono"; si trae
+    contenido, TelefonoValido sigue exigiendo exactamente 10 digitos.
+    """
+    telefono = StringField('Teléfono', validators=[
+        Optional(),
+        TelefonoValido(),
+    ])
+    submit = SubmitField('Guardar teléfono')
+
+
+class EditarEstudianteForm(FlaskForm):
+    """
+    Edicion administrativa del bibliotecario sobre un estudiante YA
+    registrado: datos de contacto y academicos, reutilizando los mismos
+    validadores que EstudianteForm (registro). A proposito NO incluye
+    cedula (ver la nota de CedulaEcuatorianaValida/EstudianteForm: la cedula
+    es Usuario.username y no se cambia desde la UI normal) ni fecha de
+    nacimiento/genero, que no forman parte de esta edicion.
+    """
+    nombres = StringField('Nombres', validators=[
+        DataRequired(message='Los nombres son obligatorios.'),
+        Length(min=2, max=100, message='Los nombres deben tener entre 2 y 100 caracteres.'),
+        SoloLetras(message='Los nombres solo pueden contener letras y espacios.'),
+    ])
+    apellidos = StringField('Apellidos', validators=[
+        DataRequired(message='Los apellidos son obligatorios.'),
+        Length(min=2, max=100, message='Los apellidos deben tener entre 2 y 100 caracteres.'),
+        SoloLetras(message='Los apellidos solo pueden contener letras y espacios.'),
+    ])
+    correo = StringField('Correo electrónico', validators=[
+        DataRequired(message='El correo es obligatorio.'),
+        CorreoValido(),
+        Length(max=150),
+    ])
+    telefono = StringField('Teléfono', validators=[
+        Optional(),
+        TelefonoValido(),
+    ])
+    carrera_id = SelectField(
+        'Carrera', coerce=int,
+        validators=[NumberRange(min=1, message='Selecciona una carrera.')]
+    )
+    submit = SubmitField('Guardar cambios')
+
+
 class PrestamoForm(FlaskForm):
     # Cedula aqui es un campo de BUSQUEDA de un estudiante que ya debe existir
     # (no se crea aqui), por eso se valida solo el formato y no el digito

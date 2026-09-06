@@ -15,6 +15,11 @@ from datetime import date
 
 from app.extensions import db
 from app.models import ConfiguracionSistema, Estudiante, Prestamo
+# Reexportadas para no tocar los imports de quien ya las usa desde aqui
+# (app/controllers/bibliotecario/prestamos.py). Su definicion real vive en
+# app/presentacion.py: son presentacion pura (avatar, edad), no logica de
+# prestamos, y estudiante/perfil.py tambien las necesita.
+from app.presentacion import calcular_edad, iniciales  # noqa: F401
 
 # Un prestamo "ocupa cupo" mientras no se haya devuelto: tanto 'activo' como
 # 'vencido' significan que el estudiante todavia tiene el libro.
@@ -47,26 +52,6 @@ def max_prestamos_activos():
     # Un 0 o un negativo dejarian a todos sin poder pedir libros (o, peor,
     # se interpretarian como "sin limite"): tampoco son configuraciones validas.
     return maximo if maximo > 0 else MAX_PRESTAMOS_POR_DEFECTO
-
-
-def calcular_edad(fecha_nacimiento, hoy=None):
-    """Edad en anios a partir de la fecha de nacimiento (no se guarda en BD)."""
-    if not fecha_nacimiento:
-        return None
-    hoy = hoy or date.today()
-    return hoy.year - fecha_nacimiento.year - (
-        (hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day)
-    )
-
-
-def iniciales(nombres, apellidos):
-    """Iniciales para el avatar de la tarjeta (el modelo no tiene fotografia)."""
-    letras = ''
-    for texto in (nombres, apellidos):
-        texto = (texto or '').strip()
-        if texto:
-            letras += texto[0].upper()
-    return letras or '?'
 
 
 def contar_prestamos_pendientes(estudiante_id):
