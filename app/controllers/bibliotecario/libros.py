@@ -146,6 +146,7 @@ def nuevo_libro():
             stock_total=form.stock_inicial.data,
             stock_disponible=form.stock_inicial.data,
             portada_archivo=ruta_portada,
+            resumen=(form.resumen.data or '').strip() or None,
         )
         db.session.add(libro)
         db.session.flush()

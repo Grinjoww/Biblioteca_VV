@@ -1,5 +1,5 @@
 {% extends 'bibliotecario/_base.html' %}
-{% from 'shared/_macros.html' import portada_libro %}
+{% from 'shared/_macros.html' import portada_libro, autores_libro, boton_ver_resumen %}
 {% from 'shared/_paginacion.html' import control_paginacion, badge_nuevo %}
 
 {% block title %}Libros - Bibliotecario{% endblock %}
@@ -55,6 +55,7 @@
                     <th>Editorial</th>
                     <th>Categoría</th>
                     <th>Stock</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -69,13 +70,20 @@
                     <td>{{ libro.editorial.nombre if libro.editorial else '-' }}</td>
                     <td>{{ libro.categoria.nombre if libro.categoria else '-' }}</td>
                     <td>{{ libro.stock_disponible }} / {{ libro.stock_total }}</td>
+                    <td class="text-end">{{ boton_ver_resumen(libro, autores_libro(libro)) }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" class="text-center text-muted py-3">No se encontraron libros con esos criterios.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-3">No se encontraron libros con esos criterios.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     {{ control_paginacion(paginacion, 'bibliotecario.listado_libros', argumentos, 'libros') }}
 </div>
+
+{% include 'shared/_modal_resumen.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/resumen_libro.js') }}"></script>
 {% endblock %}

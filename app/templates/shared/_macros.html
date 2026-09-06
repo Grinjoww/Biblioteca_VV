@@ -3,6 +3,35 @@
 {% endmacro %}
 
 
+{# Nombres de los autores de un libro, separados por coma. Usa la relacion
+   libro_autor ya cargada (sin hacer una consulta nueva por libro). #}
+{% macro autores_libro(libro) %}
+{%- set nombres = [] -%}
+{%- for enlace in libro.libro_autor -%}
+    {%- if enlace.autor -%}
+        {%- set _ = nombres.append(enlace.autor.nombres ~ ' ' ~ enlace.autor.apellidos) -%}
+    {%- endif -%}
+{%- endfor -%}
+{{- nombres | join(', ') if nombres else 'Autor no registrado' -}}
+{% endmacro %}
+
+
+{#
+    Boton "Ver resumen": abre el modal compartido (shared/_modal_resumen.html)
+    sin recargar la pagina. Los datos viajan en atributos data-* (autoescapados
+    por Jinja) y los lee static/js/resumen_libro.js.
+#}
+{% macro boton_ver_resumen(libro, autores, css_class='btn btn-outline-secondary btn-sm') %}
+<button type="button" class="{{ css_class }}" data-accion="ver-resumen"
+        data-portada="{{ url_portada(libro.portada_archivo) }}"
+        data-titulo="{{ libro.titulo }}"
+        data-autores="{{ autores }}"
+        data-resumen="{{ libro.resumen or '' }}">
+    Ver resumen
+</button>
+{% endmacro %}
+
+
 {% macro tabla_dinamica(columnas, filas, mensaje_vacio='No hay datos para mostrar.') %}
 <div class="table-responsive">
     <table class="table table-hover table-striped align-middle mb-0">

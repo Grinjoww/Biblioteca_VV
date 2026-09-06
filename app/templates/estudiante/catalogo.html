@@ -1,5 +1,5 @@
 {% extends 'estudiante/_base.html' %}
-{% from 'shared/_macros.html' import portada_libro %}
+{% from 'shared/_macros.html' import portada_libro, autores_libro, boton_ver_resumen %}
 
 {% block title %}Catálogo - Estudiante{% endblock %}
 
@@ -34,7 +34,10 @@
                         {{ libro.stock_disponible }} disponible(s)
                     </span>
                 </p>
-                <a href="{{ url_for('estudiante.detalle_libro', isbn=libro.isbn) }}" class="btn btn-outline-primary btn-sm">Ver detalle</a>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('estudiante.detalle_libro', isbn=libro.isbn) }}" class="btn btn-outline-primary btn-sm">Ver detalle</a>
+                    {{ boton_ver_resumen(libro, autores_libro(libro)) }}
+                </div>
             </div>
         </div>
     </div>
@@ -44,8 +47,11 @@
     </div>
     {% endfor %}
 </div>
+
+{% include 'shared/_modal_resumen.html' %}
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/estudiante_catalogo.js') }}"></script>
+<script src="{{ url_for('static', filename='js/resumen_libro.js') }}"></script>
 {% endblock %}

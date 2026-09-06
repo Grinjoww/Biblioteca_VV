@@ -79,6 +79,12 @@
                 </div>
 
                 <div class="col-12">
+                    {{ form.resumen.label(class="form-label") }}
+                    {{ form.resumen(class="form-control", rows=4, placeholder="Resumen o sinopsis del libro (opcional)...") }}
+                    {% for error in form.resumen.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+
+                <div class="col-12">
                     <hr>
                     <label class="form-label">Autores</label>
 

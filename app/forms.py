@@ -75,6 +75,10 @@ class LibroForm(FlaskForm):
             NumberRange(min=1, max=200, message='Ingresa una cantidad entre 1 y 200.'),
         ]
     )
+    resumen = TextAreaField('Resumen / Sinopsis', validators=[
+        Optional(),
+        Length(max=5000, message='El resumen no puede superar los 5000 caracteres.'),
+    ])
     autores_ids = HiddenField('Autores')
     portada = FileField('Portada del libro (opcional)', validators=[
         Optional(),

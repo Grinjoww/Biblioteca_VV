@@ -21,6 +21,10 @@ class Libro(db.Model):
     # Ruta relativa a app/static/ (ej. 'uploads/portadas/<uuid>.jpg'). Opcional:
     # los libros sin portada (incluidos los ya existentes) usan un placeholder.
     portada_archivo = db.Column(db.String(255), nullable=True)
+    # Resumen/sinopsis opcional. Text (no VARCHAR) para admitir textos largos;
+    # se muestra en un modal, nunca dentro de una tabla. Los libros existentes
+    # quedan en NULL y siguen funcionando igual (ver url_portada/plantillas).
+    resumen = db.Column(db.Text, nullable=True)
 
     editorial = db.relationship('Editorial', backref='libros', lazy=True)
     categoria = db.relationship('CategoriaLibro', backref='libros', lazy=True)

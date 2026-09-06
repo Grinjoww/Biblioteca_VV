@@ -39,6 +39,10 @@ def api_buscar_catalogo():
             'categoria': libro.categoria.nombre if libro.categoria else '',
             'stock_disponible': libro.stock_disponible,
             'portada_url': url_portada(libro.portada_archivo),
+            'autores': ', '.join(
+                f'{la.autor.nombres} {la.autor.apellidos}' for la in libro.libro_autor if la.autor
+            ) or 'Autor no registrado',
+            'resumen': libro.resumen or '',
         }
         for libro in libros
     ])

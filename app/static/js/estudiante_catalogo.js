@@ -41,16 +41,33 @@ document.addEventListener('DOMContentLoaded', function () {
         badge.textContent = libro.stock_disponible + ' disponible(s)';
         stockParrafo.appendChild(badge);
 
+        const acciones = document.createElement('div');
+        acciones.className = 'd-flex flex-wrap gap-2';
+
         const enlace = document.createElement('a');
         enlace.className = 'btn btn-outline-primary btn-sm';
         enlace.href = '/estudiante/catalogo/' + encodeURIComponent(libro.isbn);
         enlace.textContent = 'Ver detalle';
 
+        // El boton lee estos data-* con static/js/resumen_libro.js (modal compartido).
+        const botonResumen = document.createElement('button');
+        botonResumen.type = 'button';
+        botonResumen.className = 'btn btn-outline-secondary btn-sm';
+        botonResumen.dataset.accion = 'ver-resumen';
+        botonResumen.dataset.portada = libro.portada_url;
+        botonResumen.dataset.titulo = libro.titulo;
+        botonResumen.dataset.autores = libro.autores || '';
+        botonResumen.dataset.resumen = libro.resumen || '';
+        botonResumen.textContent = 'Ver resumen';
+
+        acciones.appendChild(enlace);
+        acciones.appendChild(botonResumen);
+
         body.appendChild(titulo);
         body.appendChild(categoria);
         body.appendChild(editorial);
         body.appendChild(stockParrafo);
-        body.appendChild(enlace);
+        body.appendChild(acciones);
         card.appendChild(portada);
         card.appendChild(body);
         col.appendChild(card);
