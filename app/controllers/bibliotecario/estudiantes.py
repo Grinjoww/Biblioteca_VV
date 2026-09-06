@@ -1,5 +1,3 @@
-import secrets
-
 from flask import jsonify, redirect, render_template, request, url_for, flash
 from flask_login import login_required
 from werkzeug.security import generate_password_hash
@@ -13,11 +11,8 @@ from app.paginacion import (
     POR_PAGINA, argumentos_activos, entero_filtro, id_nuevo, opcion_filtro,
     pagina_actual, texto_filtro,
 )
+from app.seguridad import generar_password_temporal, respuesta_sin_cache
 from app.validators import es_cedula_ecuatoriana_valida
-
-
-def _generar_password_temporal():
-    return secrets.token_urlsafe(6)
 
 
 @bibliotecario_bp.route('/estudiantes')
@@ -82,7 +77,7 @@ def nuevo_estudiante():
             flash('Ya existe una cuenta de usuario con esa cédula.', 'danger')
             return render_template('bibliotecario/estudiantes_nuevo.html', form=form)
 
-        password_temporal = _generar_password_temporal()
+        password_temporal = generar_password_temporal()
 
         usuario = Usuario(
             username=form.cedula.data,
@@ -113,13 +108,19 @@ def nuevo_estudiante():
             flash('No se pudo registrar el estudiante. Verifica los datos ingresados.', 'danger')
             return render_template('bibliotecario/estudiantes_nuevo.html', form=form)
 
-        flash(
-            f'Estudiante registrado correctamente. Usuario: {usuario.username} · '
-            f'Contraseña temporal: {password_temporal} (el estudiante deberá cambiarla al ingresar).',
-            'success'
-        )
-        # `nuevo` pinta el badge "Nuevo" en el listado; no se guarda en la BD.
-        return redirect(url_for('bibliotecario.listado_estudiantes', nuevo=estudiante.id))
+        # Se renderiza directamente la pantalla de credenciales (sin redirect):
+        # la clave temporal solo existe en memoria durante esta peticion, no se
+        # guarda en BD ni en session, y no hay ruta GET que pueda recuperarla.
+        # El enlace "Ver en el listado" de esa pantalla conserva ?nuevo=<id>
+        # para seguir marcando el registro recien creado, y su JS reemplaza la
+        # URL del POST por ese GET para que un F5 no reenvie el formulario.
+        # La respuesta va con no-store: ningun cache debe guardar la clave.
+        return respuesta_sin_cache(render_template(
+            'bibliotecario/estudiantes_credenciales.html',
+            usuario=usuario,
+            estudiante=estudiante,
+            password_temporal=password_temporal,
+        ))
 
     return render_template('bibliotecario/estudiantes_nuevo.html', form=form)
 

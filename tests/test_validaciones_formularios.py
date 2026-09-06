@@ -189,9 +189,10 @@ def test_registrar_estudiante_telefono_10_digitos_valido(client, login, usuario_
         carrera_id=str(carrera_prueba.id),
     ))
 
-    assert respuesta.status_code == 302
-    # El redirect agrega ?nuevo=<id> para marcar el registro recien creado.
-    assert respuesta.headers['Location'].startswith('/bibliotecario/estudiantes')
+    # El registro exitoso ya no redirige: responde 200 con la pantalla de
+    # credenciales temporales (usuario + clave que se muestra una sola vez).
+    assert respuesta.status_code == 200
+    assert 'Estudiante registrado correctamente' in respuesta.get_data(as_text=True)
 
 
 def test_registrar_estudiante_fecha_nacimiento_futura(client, login, usuario_bibliotecario):
@@ -225,9 +226,10 @@ def test_registrar_estudiante_valido_exitoso(client, login, usuario_bibliotecari
         carrera_id=str(carrera_prueba.id),
     ))
 
-    assert respuesta.status_code == 302
-    # El redirect agrega ?nuevo=<id> para marcar el registro recien creado.
-    assert respuesta.headers['Location'].startswith('/bibliotecario/estudiantes')
+    # El registro exitoso ya no redirige: responde 200 con la pantalla de
+    # credenciales temporales (usuario + clave que se muestra una sola vez).
+    assert respuesta.status_code == 200
+    assert 'Estudiante registrado correctamente' in respuesta.get_data(as_text=True)
 
     listado = client.get('/bibliotecario/estudiantes')
     assert 'Maria Fernanda' in listado.get_data(as_text=True)

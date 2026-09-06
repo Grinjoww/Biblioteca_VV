@@ -90,6 +90,12 @@ def cambiar_password():
             flash('La contraseña actual no es correcta.', 'danger')
             return render_template('auth/cambiar_password.html', form=form)
 
+        # Impide "cambiar" la clave dejando la misma (util sobre todo cuando la
+        # actual es una clave temporal que debe dejar de usarse).
+        if check_password_hash(current_user.password_hash, form.password_nueva.data):
+            flash('La nueva contraseña debe ser distinta de la actual.', 'danger')
+            return render_template('auth/cambiar_password.html', form=form)
+
         current_user.password_hash = generate_password_hash(form.password_nueva.data)
         current_user.debe_cambiar_password = False
         db.session.commit()
@@ -98,6 +104,34 @@ def cambiar_password():
         return redirect(url_for(_ruta_inicio_por_rol(current_user.rol)))
 
     return render_template('auth/cambiar_password.html', form=form)
+
+
+@auth_bp.before_app_request
+def _revisar_sesion_activa():
+    """
+    Expulsa en CADA peticion a quien fue desactivado despues de iniciar sesion.
+
+    El login ya rechaza cuentas inactivas, pero una sesion abierta seguia
+    navegando hasta cerrar sesion. Se ejecuta antes que el hook de cambio de
+    contraseña para que un usuario inactivo no quede atrapado en un bucle
+    hacia /cambiar-password.
+    """
+    if not current_user.is_authenticated:
+        return None
+    if current_user.activo:
+        return None
+
+    # `static` se deja pasar para no romper el CSS/JS de la propia pantalla
+    # de login a la que se redirige.
+    if request.endpoint == 'static':
+        return None
+
+    # 'forzado' es uno de los motivos permitidos por chk_sesiones_motivo_cierre
+    # ('logout', 'expiracion', 'forzado'): el cierre lo provoca el administrador.
+    _cerrar_sesion_activa(current_user.id, motivo='forzado')
+    logout_user()
+    flash('Tu cuenta fue desactivada. Contacta al administrador.', 'warning')
+    return redirect(url_for('auth.login'))
 
 
 @auth_bp.before_app_request

@@ -172,7 +172,10 @@ def test_estudiante_recien_creado_se_marca_como_nuevo(
 
     estudiante = Estudiante.query.filter_by(cedula='1710034065').first()
     assert estudiante is not None
-    assert respuesta.headers['Location'].endswith(f'?nuevo={estudiante.id}')
+    # El registro ya no redirige: responde la pantalla de credenciales, cuyo
+    # enlace "Ver en el listado" conserva el marcado ?nuevo=<id>.
+    assert respuesta.status_code == 200
+    assert f'nuevo={estudiante.id}' in respuesta.get_data(as_text=True)
 
     con_badge = client.get(f'/bibliotecario/estudiantes?nuevo={estudiante.id}').get_data(as_text=True)
     assert 'Nuevo</span>' in con_badge
@@ -420,29 +423,35 @@ def test_el_js_compartido_de_mensajes_esta_en_todas_las_pantallas(
 def test_flash_de_exito_se_autocierra_y_el_de_error_no(
     client, db, bibliotecario_logueado, carrera_prueba
 ):
-    exito = client.post('/bibliotecario/estudiantes/nuevo', data={
-        'cedula': '1710034065',
-        'nombres': 'Nuevo',
-        'apellidos': 'Estudiante',
-        'correo': 'nuevo.estudiante@uteq.edu.ec',
-        'telefono': '0991234567',
-        'carrera_id': str(carrera_prueba.id),
-        'fecha_nacimiento': '2003-05-20',
-        'genero': 'M',
+    # Se usa el registro de LIBRO para el caso de exito: el registro de
+    # estudiante ya no emite flash, ahora responde la pantalla de credenciales
+    # temporales (ver tests/test_gestion_usuarios.py).
+    categoria = CategoriaLibro(nombre='Categoria Flash')
+    autor = Autor(nombres='Autora', apellidos='Flash')
+    db.session.add_all([categoria, autor])
+    db.session.commit()
+
+    exito = client.post('/bibliotecario/libros/nuevo', data={
+        'isbn': '9780306406157',  # ISBN-13 con digito verificador valido
+        'titulo': 'Libro para el flash',
+        'editorial_nombre': 'Editorial Flash',
+        'categoria_id': str(categoria.id),
+        'idioma': 'Español',
+        'stock_inicial': '1',
+        'autores_ids': str(autor.id),
     }, follow_redirects=True).get_data(as_text=True)
     assert 'alert-success' in exito
     assert 'data-auto-cerrar' in exito
 
-    # Un error (cedula repetida) se queda hasta que el usuario lo cierre.
-    error = client.post('/bibliotecario/estudiantes/nuevo', data={
-        'cedula': '1710034065',
-        'nombres': 'Otro',
-        'apellidos': 'Estudiante',
-        'correo': 'otro.estudiante@uteq.edu.ec',
-        'telefono': '0991234567',
-        'carrera_id': str(carrera_prueba.id),
-        'fecha_nacimiento': '2003-05-20',
-        'genero': 'M',
+    # Un error (ISBN repetido) se queda hasta que el usuario lo cierre.
+    error = client.post('/bibliotecario/libros/nuevo', data={
+        'isbn': '9780306406157',  # el mismo de arriba
+        'titulo': 'Otro libro con el mismo ISBN',
+        'editorial_nombre': 'Editorial Flash',
+        'categoria_id': str(categoria.id),
+        'idioma': 'Español',
+        'stock_inicial': '1',
+        'autores_ids': str(autor.id),
     }).get_data(as_text=True)
     assert 'alert-danger' in error
     assert 'data-auto-cerrar' not in error

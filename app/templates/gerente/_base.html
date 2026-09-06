@@ -17,6 +17,10 @@
                     <a class="nav-link {% if request.endpoint in ['gerente.listado_reportes', 'gerente.ver_reporte'] %}active{% endif %}"
                        href="{{ url_for('gerente.listado_reportes') }}">Reportes</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint in ['gerente.listado_usuarios', 'gerente.restablecer_password'] %}active{% endif %}"
+                       href="{{ url_for('gerente.listado_usuarios') }}">Usuarios</a>
+                </li>
             </ul>
             <span class="navbar-text me-3">{{ current_user.username }}</span>
             <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}">Cerrar sesión</a>

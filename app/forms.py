@@ -158,6 +158,16 @@ class DevolucionForm(FlaskForm):
     submit = SubmitField('Registrar devolución')
 
 
+class AccionUsuarioForm(FlaskForm):
+    """
+    Acciones administrativas del gerente sobre una cuenta (activar/desactivar,
+    restablecer contraseña, cambiar rol). Solo aporta el token CSRF: el destino
+    va en la URL y el rol nuevo se lee de request.form contra una lista blanca.
+    Todas se ejecutan por POST, nunca por GET.
+    """
+    submit = SubmitField('Confirmar')
+
+
 class DevolucionLoteForm(FlaskForm):
     """
     Devolucion de varios libros de una misma operacion.
