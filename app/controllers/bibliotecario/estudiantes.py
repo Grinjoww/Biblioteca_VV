@@ -65,11 +65,17 @@ def nuevo_estudiante():
     ]
 
     if form.validate_on_submit():
+        # El correo se normaliza ANTES de buscar duplicados y no solo al
+        # guardar: si no, " ana@uteq.edu.ec " no encontraba al ana@uteq.edu.ec
+        # ya registrado, se insertaba ya recortado y chocaba con el UNIQUE de
+        # la columna, dando un error generico en vez del mensaje de duplicado.
+        correo = form.correo.data.strip()
+
         if Estudiante.query.filter_by(cedula=form.cedula.data).first():
             flash('Ya existe un estudiante registrado con esa cédula.', 'danger')
             return render_template('bibliotecario/estudiantes_nuevo.html', form=form)
 
-        if Estudiante.query.filter_by(correo=form.correo.data).first():
+        if Estudiante.query.filter_by(correo=correo).first():
             flash('Ya existe un estudiante registrado con ese correo.', 'danger')
             return render_template('bibliotecario/estudiantes_nuevo.html', form=form)
 
@@ -92,7 +98,7 @@ def nuevo_estudiante():
             cedula=form.cedula.data,
             nombres=form.nombres.data.strip(),
             apellidos=form.apellidos.data.strip(),
-            correo=form.correo.data.strip(),
+            correo=correo,
             telefono=(form.telefono.data or '').strip() or None,
             carrera_id=form.carrera_id.data,
             fecha_nacimiento=form.fecha_nacimiento.data,

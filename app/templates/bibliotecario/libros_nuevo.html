@@ -7,6 +7,7 @@
 
 <div class="card shadow-sm">
     <div class="card-body">
+        {% set anio_min, anio_max = limites_anio_publicacion() %}
         <form method="POST" enctype="multipart/form-data" novalidate>
             {{ form.hidden_tag() }}
 
@@ -22,7 +23,8 @@
             <div class="row g-3 mt-0">
                 <div class="col-md-4">
                     {{ form.isbn.label(class="form-label") }}
-                    {{ form.isbn(class="form-control", maxlength=13, placeholder="9789978000000") }}
+                    {{ form.isbn(class="form-control", maxlength=13, inputmode="numeric",
+                                 autocomplete="off", placeholder="9789978000000") }}
                     {% for error in form.isbn.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="col-md-8">
@@ -55,7 +57,7 @@
 
                 <div class="col-md-4">
                     {{ form.anio_publicacion.label(class="form-label") }}
-                    {{ form.anio_publicacion(class="form-control") }}
+                    {{ form.anio_publicacion(class="form-control", min=anio_min, max=anio_max) }}
                     {% for error in form.anio_publicacion.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
                 <div class="col-md-4">
@@ -95,10 +97,12 @@
 
                     <div class="row g-2 align-items-end mb-2">
                         <div class="col-md-4">
-                            <input type="text" id="nuevo-autor-nombres" class="form-control form-control-sm" placeholder="Nombres (autor nuevo)">
+                            <input type="text" id="nuevo-autor-nombres" class="form-control form-control-sm"
+                                   maxlength="100" placeholder="Nombres (autor nuevo)">
                         </div>
                         <div class="col-md-4">
-                            <input type="text" id="nuevo-autor-apellidos" class="form-control form-control-sm" placeholder="Apellidos (autor nuevo)">
+                            <input type="text" id="nuevo-autor-apellidos" class="form-control form-control-sm"
+                                   maxlength="100" placeholder="Apellidos (autor nuevo)">
                         </div>
                         <div class="col-md-4">
                             <button type="button" id="btn-crear-autor" class="btn btn-outline-secondary btn-sm w-100">Agregar autor nuevo</button>

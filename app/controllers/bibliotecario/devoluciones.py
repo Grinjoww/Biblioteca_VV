@@ -32,6 +32,14 @@ from app.paginacion import (
 
 ESTADOS_EJEMPLAR = ('bueno', 'dañado', 'perdido')
 
+# Mismo tope que DevolucionForm.observaciones (Length(max=500)). Los campos
+# por libro de esta pantalla son dinamicos y se leen de request.form, asi que
+# no pasan por WTForms: el maxlength del HTML es solo ayuda visual y este es
+# el limite que de verdad se aplica. Se rechaza (no se recorta) para que el
+# bibliotecario vea que su texto no se guardo completo, igual que en el
+# formulario de devolucion individual.
+LARGO_MAXIMO_OBSERVACION = 500
+
 
 def _registrar_devolucion_prestamo(prestamo, estado_ejemplar, observaciones):
     """
@@ -167,8 +175,16 @@ def devolucion_operacion(prestamo_id):
                 if estado_ejemplar not in ESTADOS_EJEMPLAR:
                     raise ValueError(f'Estado del ejemplar no válido para {pendiente.codigo_prestamo}.')
 
-                observaciones = (request.form.get(f'observacion_{pid}') or '').strip() or None
-                devolucion = _registrar_devolucion_prestamo(pendiente, estado_ejemplar, observaciones)
+                observaciones = (request.form.get(f'observacion_{pid}') or '').strip()
+                if len(observaciones) > LARGO_MAXIMO_OBSERVACION:
+                    raise ValueError(
+                        f'La observación de {pendiente.codigo_prestamo} no puede superar '
+                        f'los {LARGO_MAXIMO_OBSERVACION} caracteres.'
+                    )
+
+                devolucion = _registrar_devolucion_prestamo(
+                    pendiente, estado_ejemplar, observaciones or None
+                )
                 total_multa += Decimal(devolucion.multa_generada or 0)
 
             db.session.commit()

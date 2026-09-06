@@ -17,6 +17,12 @@ from app.portadas import CARPETA_RELATIVA, PortadaInvalida, guardar_portada, url
 from app.validators import es_solo_letras
 
 
+# Igual que Autor.nombres / Autor.apellidos (VARCHAR(100)). Sin este tope, un
+# nombre mas largo llegaba intacto al INSERT y PostgreSQL respondia con un
+# error de truncamiento que nadie atrapaba: error 500 con traceback.
+LARGO_MAXIMO_NOMBRE_AUTOR = 100
+
+
 def _carpeta_portadas_absoluta():
     return os.path.join(current_app.static_folder, *CARPETA_RELATIVA.split('/'))
 
@@ -236,15 +242,39 @@ def api_buscar_autores():
 @login_required
 @requiere_rol('bibliotecario')
 def api_crear_autor():
+    # El cuerpo JSON lo elige por completo quien llama, asi que se comprueba
+    # su forma antes de usarlo: un array o un numero en la raiz no tiene .get()
+    # y un valor no textual en nombres/apellidos no tiene .strip(). En ambos
+    # casos el AttributeError salia como error 500 con traceback.
+    # `or {}` conserva el comportamiento previo cuando no llega cuerpo o no es
+    # JSON valido: se sigue respondiendo "obligatorios", no un error de tipo.
     datos = request.get_json(silent=True) or {}
-    nombres = (datos.get('nombres') or '').strip()
-    apellidos = (datos.get('apellidos') or '').strip()
+    if not isinstance(datos, dict):
+        return jsonify({'error': 'El cuerpo de la petición debe ser un objeto JSON.'}), 400
+
+    nombres = datos.get('nombres')
+    apellidos = datos.get('apellidos')
+
+    # Se rechaza el tipo en vez de convertirlo: 123 no es un nombre, y
+    # pasarlo a "123" solo lo disfrazaria de valido para las reglas de abajo.
+    # isinstance(True, str) es False, asi que los booleanos tambien caen aqui.
+    for valor in (nombres, apellidos):
+        if valor is not None and not isinstance(valor, str):
+            return jsonify({'error': 'Nombres y apellidos deben enviarse como texto.'}), 400
+
+    nombres = (nombres or '').strip()
+    apellidos = (apellidos or '').strip()
 
     if not nombres or not apellidos:
         return jsonify({'error': 'Nombres y apellidos son obligatorios.'}), 400
 
     if len(nombres) < 2 or len(apellidos) < 2:
         return jsonify({'error': 'Nombres y apellidos deben tener al menos 2 caracteres.'}), 400
+
+    if len(nombres) > LARGO_MAXIMO_NOMBRE_AUTOR or len(apellidos) > LARGO_MAXIMO_NOMBRE_AUTOR:
+        return jsonify({
+            'error': f'Nombres y apellidos no pueden superar los {LARGO_MAXIMO_NOMBRE_AUTOR} caracteres.',
+        }), 400
 
     if not es_solo_letras(nombres) or not es_solo_letras(apellidos):
         return jsonify({'error': 'Nombres y apellidos solo pueden contener letras y espacios.'}), 400
@@ -261,6 +291,15 @@ def api_crear_autor():
 
     autor = Autor(nombres=nombres, apellidos=apellidos)
     db.session.add(autor)
-    db.session.commit()
+
+    # Red de seguridad: aunque las validaciones de arriba ya cubren longitud y
+    # formato, cualquier rechazo de la BD (constraint, carrera entre dos
+    # peticiones) debe volver como JSON de error, nunca como traceback. El
+    # rollback deja la sesion utilizable para la siguiente peticion.
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'No se pudo registrar el autor. Verifica los datos ingresados.'}), 400
 
     return jsonify({'id': autor.id, 'nombre': f'{autor.nombres} {autor.apellidos}'}), 201

@@ -21,6 +21,52 @@ from datetime import date
 
 from wtforms.validators import ValidationError
 
+# ---------------------------------------------------------------------
+# Limites de negocio compartidos
+#
+# Viven aqui, junto a los validadores que los aplican, para que el backend
+# (fuente de verdad) y los atributos min/max del HTML no puedan
+# desincronizarse. Los limites que dependen de "hoy" se calculan en cada
+# llamada, nunca al importar el modulo: si el proceso sigue vivo al cambiar
+# de anio, el formulario acompania el cambio.
+# ---------------------------------------------------------------------
+
+# Coincide con chk_libros_anio_publicacion (BETWEEN 1800 AND EXTRACT(YEAR FROM NOW())).
+ANIO_MINIMO_PUBLICACION = 1800
+
+EDAD_MINIMA_ESTUDIANTE = 15
+EDAD_MAXIMA_ESTUDIANTE = 100
+
+
+def _restar_anios(fecha, anios):
+    """`fecha` con `anios` menos. Un 29 de febrero cae al 28 si el anio destino no es bisiesto."""
+    try:
+        return fecha.replace(year=fecha.year - anios)
+    except ValueError:
+        return fecha.replace(month=2, day=28, year=fecha.year - anios)
+
+
+def limites_anio_publicacion(hoy=None):
+    """(minimo, maximo) para el input type=number del anio de publicacion."""
+    hoy = hoy or date.today()
+    return ANIO_MINIMO_PUBLICACION, hoy.year
+
+
+def limites_fecha_nacimiento(hoy=None):
+    """
+    (minimo, maximo) en ISO para el input type=date de la fecha de nacimiento.
+
+    Se derivan de la misma regla que aplica EdadEntre en el servidor: el
+    maximo es la fecha de quien cumple EDAD_MINIMA_ESTUDIANTE hoy y el minimo
+    la de quien cumple EDAD_MAXIMA_ESTUDIANTE hoy. No cambia el rango 15-100.
+    """
+    hoy = hoy or date.today()
+    return (
+        _restar_anios(hoy, EDAD_MAXIMA_ESTUDIANTE).isoformat(),
+        _restar_anios(hoy, EDAD_MINIMA_ESTUDIANTE).isoformat(),
+    )
+
+
 _PATRON_SOLO_LETRAS = re.compile(r'^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+$')
 _PATRON_CONTIENE_LETRA = re.compile(r'[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]')
 _PATRON_CORREO = re.compile(

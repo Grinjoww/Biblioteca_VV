@@ -8,6 +8,7 @@ from wtforms.validators import DataRequired, Length, NumberRange, Optional, Rege
 
 from app.portadas import EXTENSIONES_PERMITIDAS, MENSAJE_FORMATO_INVALIDO, MENSAJE_TAMANO_INVALIDO, TAMANO_MAXIMO_BYTES
 from app.validators import (
+    ANIO_MINIMO_PUBLICACION, EDAD_MAXIMA_ESTUDIANTE, EDAD_MINIMA_ESTUDIANTE,
     AnioValido, CedulaEcuatorianaValida, ContieneLetra, CorreoValido,
     EdadEntre, FechaNoFutura, Isbn13Valido, SoloLetras, TelefonoValido,
 )
@@ -56,7 +57,12 @@ class LibroForm(FlaskForm):
     )
     anio_publicacion = IntegerField('Año de publicación', validators=[
         Optional(),
-        AnioValido(minimo=1000, message='Ingresa un año de publicación válido (entre 1000 y el año actual).'),
+        # El minimo lo fija ANIO_MINIMO_PUBLICACION (1800) para no aceptar aqui
+        # anios que chk_libros_anio_publicacion rechazaria despues en la BD.
+        AnioValido(
+            minimo=ANIO_MINIMO_PUBLICACION,
+            message=f'Ingresa un año de publicación válido (entre {ANIO_MINIMO_PUBLICACION} y el año actual).',
+        ),
     ])
     edicion = StringField('Edición', validators=[Optional(), Length(max=20)])
     num_paginas = IntegerField('Número de páginas', validators=[
@@ -121,7 +127,10 @@ class EstudianteForm(FlaskForm):
     fecha_nacimiento = DateField('Fecha de nacimiento', validators=[
         DataRequired(message='La fecha de nacimiento es obligatoria.'),
         FechaNoFutura(message='La fecha de nacimiento no puede ser futura.'),
-        EdadEntre(15, 100, message='El estudiante debe tener entre 15 y 100 años.'),
+        EdadEntre(
+            EDAD_MINIMA_ESTUDIANTE, EDAD_MAXIMA_ESTUDIANTE,
+            message=f'El estudiante debe tener entre {EDAD_MINIMA_ESTUDIANTE} y {EDAD_MAXIMA_ESTUDIANTE} años.',
+        ),
     ])
     genero = SelectField(
         'Género',

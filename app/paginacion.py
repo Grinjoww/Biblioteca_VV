@@ -12,13 +12,21 @@ from app.extensions import db
 # Registros por pagina en los listados principales del bibliotecario.
 POR_PAGINA = 10
 
+# Tope de pagina. Un `?page=99999999999999999999` se convertia en un entero de
+# Python sin problema y llegaba tal cual al OFFSET de la consulta, donde
+# PostgreSQL lo rechaza por desbordar bigint: error 500 con un simple cambio
+# de URL. Con el tope, una pagina absurda se comporta como la ultima pagina
+# posible (vacia), no como un error. No afecta a la paginacion normal: ningun
+# listado de este sistema llega a 100000 paginas (un millon de registros).
+MAX_PAGINA = 100000
+
 
 def pagina_actual(request):
     """Numero de pagina pedido por GET. Cualquier valor invalido -> pagina 1."""
     pagina = request.args.get('page', type=int)
     if pagina is None or pagina < 1:
         return 1
-    return pagina
+    return min(pagina, MAX_PAGINA)
 
 
 def texto_filtro(request, nombre, maximo=100):
